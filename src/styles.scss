@@ -1,1 +1,202 @@
-/* You can add global styles to this file, and also import other style files */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-body: "Aptos", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Aptos Display", "Segoe UI", system-ui, sans-serif;
+  --radius: 0.5rem;
+  --background: oklch(0.982 0.006 230);
+  --foreground: oklch(0.18 0.032 236);
+  --card: oklch(0.998 0.003 230);
+  --card-foreground: oklch(0.18 0.032 236);
+  --popover: oklch(0.998 0.003 230);
+  --popover-foreground: oklch(0.18 0.032 236);
+  --primary: oklch(0.30 0.067 239);
+  --primary-foreground: oklch(0.985 0.004 230);
+  --secondary: oklch(0.94 0.008 232);
+  --secondary-foreground: oklch(0.22 0.038 238);
+  --muted: oklch(0.935 0.007 232);
+  --muted-foreground: oklch(0.46 0.019 236);
+  --accent: oklch(0.58 0.215 18);
+  --accent-foreground: oklch(0.985 0.004 230);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.986 0.006 96.7);
+  --border: oklch(0.84 0.01 232);
+  --input: oklch(0.88 0.01 232);
+  --ring: oklch(0.58 0.215 18);
+  --chart-1: oklch(0.56 0.122 169.1);
+  --chart-2: oklch(0.75 0.145 75.1);
+  --chart-3: oklch(0.58 0.12 217.2);
+  --chart-4: oklch(0.62 0.16 33.5);
+  --chart-5: oklch(0.48 0.075 132.6);
+  --sidebar: oklch(0.245 0.043 160.2);
+  --sidebar-foreground: oklch(0.97 0.012 96.2);
+  --sidebar-primary: oklch(0.785 0.141 75.3);
+  --sidebar-primary-foreground: oklch(0.222 0.036 156.6);
+  --sidebar-accent: oklch(0.31 0.049 164.1);
+  --sidebar-accent-foreground: oklch(0.97 0.012 96.2);
+  --sidebar-border: oklch(0.42 0.045 158.1);
+  --sidebar-ring: oklch(0.785 0.141 75.3);
+  --success: oklch(0.48 0.12 170);
+  --success-foreground: oklch(0.986 0.006 96.7);
+  --warning: oklch(0.58 0.215 18);
+  --warning-foreground: oklch(0.985 0.004 230);
+  --panel: oklch(0.23 0.057 240);
+  --panel-foreground: oklch(0.985 0.004 230);
+  --quote: oklch(0.99 0.004 230);
+  --quote-foreground: oklch(0.20 0.035 238);
+  --gradient-aurora: linear-gradient(180deg, var(--background), oklch(0.955 0.01 235));
+  --gradient-panel: linear-gradient(135deg, oklch(0.16 0.052 242) 0%, oklch(0.22 0.062 238) 46%, oklch(0.29 0.072 232) 72%, oklch(0.36 0.12 22) 130%);
+  --shadow-command: 0 22px 64px -38px color-mix(in oklab, var(--primary) 50%, transparent);
+  --shadow-panel: 0 20px 48px -34px oklch(0.16 0.035 238 / 45%);
+}
+
+.dark {
+  --background: oklch(0.129 0.042 264.695);
+  --foreground: oklch(0.984 0.003 247.858);
+  --card: oklch(0.208 0.042 265.755);
+  --card-foreground: oklch(0.984 0.003 247.858);
+  --popover: oklch(0.208 0.042 265.755);
+  --popover-foreground: oklch(0.984 0.003 247.858);
+  --primary: oklch(0.929 0.013 255.508);
+  --primary-foreground: oklch(0.208 0.042 265.755);
+  --secondary: oklch(0.279 0.041 260.031);
+  --secondary-foreground: oklch(0.984 0.003 247.858);
+  --muted: oklch(0.279 0.041 260.031);
+  --muted-foreground: oklch(0.704 0.04 256.788);
+  --accent: oklch(0.279 0.041 260.031);
+  --accent-foreground: oklch(0.984 0.003 247.858);
+  --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: oklch(0.984 0.003 247.858);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.551 0.027 264.364);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.208 0.042 265.755);
+  --sidebar-foreground: oklch(0.984 0.003 247.858);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
+  --sidebar-accent: oklch(0.279 0.041 260.031);
+  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.551 0.027 264.364);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-body);
+    font-feature-settings: "ss01" 1, "cv01" 1;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    letter-spacing: 0;
+  }
+}
+
+@layer utilities {
+  .budget-aurora {
+    background-image: var(--gradient-aurora);
+  }
+
+  .quote-paper {
+    background-image:
+      linear-gradient(color-mix(in oklab, var(--border) 30%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in oklab, var(--border) 30%, transparent) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+
+  .signature-sheen {
+    position: relative;
+    overflow: hidden;
+    background-image: var(--gradient-panel);
+  }
+
+  .signature-sheen::after {
+    content: "";
+    position: absolute;
+    inset: 1px;
+    border-radius: calc(var(--radius) - 1px);
+    background: linear-gradient(180deg, color-mix(in oklab, var(--panel-foreground) 10%, transparent), transparent 48%);
+    pointer-events: none;
+  }
+
+  .signature-sheen::before {
+    content: "";
+    position: absolute;
+    inset: -50% 35% -60% -18%;
+    background: radial-gradient(ellipse at center, color-mix(in oklab, var(--accent) 28%, transparent), transparent 64%);
+    transform: rotate(-12deg);
+    pointer-events: none;
+  }
+
+  @keyframes sheen-drift {
+    0%, 42% { transform: translateX(-72%) rotate(8deg); }
+    72%, 100% { transform: translateX(72%) rotate(8deg); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .signature-sheen::before { animation: none; }
+  }
+
+  .quote-card {
+    position: relative;
+    overflow: hidden;
+    background:
+      linear-gradient(180deg, color-mix(in oklab, var(--card) 100%, transparent), color-mix(in oklab, var(--secondary) 55%, var(--card))),
+      var(--card);
+    border: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
+    transition: transform .35s ease, box-shadow .35s ease, border-color .35s ease;
+  }
+
+  .quote-card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--panel) 0%, color-mix(in oklab, var(--panel) 70%, var(--accent)) 60%, var(--accent) 100%);
+    opacity: .9;
+  }
+
+  .quote-card::after {
+    content: "";
+    position: absolute;
+    inset: -40% -30% auto auto;
+    width: 220px; height: 220px;
+    background: radial-gradient(circle at center, color-mix(in oklab, var(--accent) 14%, transparent), transparent 60%);
+    pointer-events: none;
+  }
+
+  .quote-card:hover {
+    transform: translateY(-3px);
+    border-color: color-mix(in oklab, var(--accent) 35%, var(--border));
+    box-shadow:
+      0 24px 48px -28px color-mix(in oklab, var(--panel) 50%, transparent),
+      0 8px 16px -10px color-mix(in oklab, var(--accent) 18%, transparent);
+  }
+
+  .quote-card-mark {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 3.5rem;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    background: linear-gradient(135deg, var(--panel), color-mix(in oklab, var(--panel) 50%, var(--accent)));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}
