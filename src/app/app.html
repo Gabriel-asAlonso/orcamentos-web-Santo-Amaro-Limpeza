@@ -3,8 +3,8 @@
     <header class="signature-sheen rounded-lg border border-panel-foreground/10 bg-panel px-5 py-4 text-panel-foreground shadow-panel sm:px-6">
       <div class="relative z-10 flex flex-col justify-between gap-5 md:flex-row md:items-center">
         <div class="flex items-center gap-4">
-          <div class="grid size-20 place-items-center rounded-lg border border-panel-foreground/12 bg-panel-foreground/95 p-1 shadow-command">
-            <img [src]="logoUrl" alt="Logo Santo Amaro Limpeza" class="size-full rounded-md object-cover" />
+          <div class="grid size-20 place-items-center rounded-lg border border-white bg-white p-1 shadow-command">
+            <img src="/logoSantoAmaroLimpeza.jpg" class="size-full rounded-md object-cover" />
           </div>
 
           <div>
@@ -17,19 +17,20 @@
           </div>
         </div>
 
-        <div class="grid gap-2 text-sm text-panel-foreground/80 sm:grid-cols-3 md:w-[28rem]">
-          <div class="rounded-md border border-panel-foreground/15 bg-panel-foreground/10 p-3">
-            <span class="block text-xs uppercase text-panel-foreground/60">Base</span>
-            <strong>{{ baseQuote ? 'A gerado' : 'Pendente' }}</strong>
+        <div class="grid gap-2 text-sm text-white sm:grid-cols-3 md:w-[28rem]">
+          <div class="rounded-md border border-white/20 bg-white/10 p-3 shadow-sm backdrop-blur-sm">
+            <span class="block text-xs uppercase text-white/65">Base</span>
+            <strong class="text-white">{{ baseQuote ? 'A gerado' : 'Pendente' }}</strong>
           </div>
 
-          <div class="rounded-md border border-panel-foreground/15 bg-panel-foreground/10 p-3">
-            <span class="block text-xs uppercase text-panel-foreground/60">Versões</span>
+          <div class="rounded-md border border-white/20 bg-white/10 p-3 shadow-sm backdrop-blur-sm">
+            <span class="block text-xs uppercase text-white/65">Versões</span>
+            <strong class="text-white">{{ quotes.length }}</strong>
           </div>
 
-          <div class="rounded-md border border-panel-foreground/15 bg-panel-foreground/10 p-3">
-            <span class="block text-xs uppercase text-panel-foreground/60">Total atual</span>
-            <strong>{{ currency(baseQuote ? previewTotal || currentTotal : currentTotal) }}</strong>
+          <div class="rounded-md border border-white/20 bg-white/10 p-3 shadow-sm backdrop-blur-sm">
+            <span class="block text-xs uppercase text-white/65">Total atual</span>
+            <strong class="text-white">{{ currency(baseQuote ? previewTotal || currentTotal : currentTotal) }}</strong>
           </div>
         </div>
       </div>
@@ -102,7 +103,7 @@
           </div>
 
           <div
-            *ngFor="let item of items"
+            *ngFor="let item of items; trackBy: trackItemById"
             class="grid grid-cols-[1fr_4.5rem_5rem_7rem_2.5rem] gap-2 border-t bg-card p-2"
           >
             <input
@@ -228,7 +229,7 @@
 
           <ng-container *ngIf="baseQuote; else lockedPreview">
             <div
-              *ngFor="let item of previewItems"
+              *ngFor="let item of previewItems; trackBy: trackItemById"
               class="grid grid-cols-[1fr_auto] gap-3 border-t py-2 text-sm"
             >
               <span>{{ item.quantity }}× {{ item.product }}</span>
@@ -298,10 +299,10 @@
 
             <span
               [class]="quote.adjustment === 0
-                ? 'rounded-full border border-border bg-secondary px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-muted-foreground'
+                ? 'rounded-full border border-border bg-secondary px-3 py-1 text-xs font-bold uppercase tracking-wide text-muted-foreground'
                 : quote.adjustment >= 0
-                  ? 'rounded-full bg-success/10 px-2.5 py-0.5 text-[11px] font-bold text-success ring-1 ring-success/30'
-                  : 'rounded-full bg-destructive/10 px-2.5 py-0.5 text-[11px] font-bold text-destructive ring-1 ring-destructive/30'"
+                  ? 'rounded-full bg-success/10 px-3 py-1 text-xs font-bold text-success ring-1 ring-success/30'
+                  : 'rounded-full bg-destructive/10 px-3 py-1 text-xs font-bold text-destructive ring-1 ring-destructive/30'"
             >
               {{
                 quote.adjustment === 0
