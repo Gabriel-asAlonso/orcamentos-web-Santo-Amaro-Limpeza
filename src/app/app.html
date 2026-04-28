@@ -36,8 +36,8 @@
       </div>
     </header>
 
-    <div class="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-      <section class="rounded-lg border bg-card p-4 shadow-panel sm:p-6">
+    <div class="grid items-stretch gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+      <section class="flex h-full flex-col rounded-lg border bg-card p-4 shadow-panel sm:p-6">
         <div class="mb-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div>
             <h2 class="text-3xl font-semibold">Criar Orçamento A</h2>
@@ -65,17 +65,20 @@
 
         <label
           *ngIf="mode === 'excel'"
-          class="mb-5 flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed bg-secondary p-6 text-center transition hover:-translate-y-0.5 hover:bg-secondary/80"
+          [class]="isImportingExcel
+            ? 'mb-5 flex cursor-wait flex-col items-center justify-center rounded-lg border border-dashed bg-secondary p-6 text-center opacity-75'
+            : 'mb-5 flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed bg-secondary p-6 text-center transition hover:-translate-y-0.5 hover:bg-secondary/80'"
         >
           <lucide-angular [img]="FileSpreadsheet" class="mb-3 size-8 text-primary"></lucide-angular>
 
-          <span class="font-semibold">Importar planilha preenchida</span>
+          <span class="font-semibold">{{ isImportingExcel ? 'Importando planilha...' : 'Importar planilha preenchida' }}</span>
           <span class="mt-1 text-sm text-muted-foreground">{{ excelStatus }}</span>
 
           <input
             class="sr-only"
             type="file"
             accept=".xlsx,.xls,.csv"
+            [disabled]="isImportingExcel"
             (change)="handleExcel($event)"
           />
         </label>
@@ -93,7 +96,31 @@
           </select>
         </label>
 
-        <div class="mt-5 overflow-hidden rounded-lg border">
+        <div class="mt-5 grid gap-4 sm:grid-cols-2">
+          <label class="block">
+            <span class="mb-2 block text-sm font-semibold">Prazo de entrega</span>
+
+            <input
+              class="h-11 w-full rounded-md border bg-background px-3 text-sm"
+              type="text"
+              placeholder="Ex.: 5 Dias Úteis"
+              [(ngModel)]="deliveryTime"
+            />
+          </label>
+
+          <label class="block">
+            <span class="mb-2 block text-sm font-semibold">Forma de pag.</span>
+
+            <input
+              class="h-11 w-full rounded-md border bg-background px-3 text-sm"
+              type="text"
+              placeholder="Ex.: 28 dias"
+              [(ngModel)]="paymentMethod"
+            />
+          </label>
+        </div>
+
+        <div class="mt-5 flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border">
           <div class="grid grid-cols-[1fr_4.5rem_5rem_7rem_2.5rem] gap-2 bg-muted px-3 py-2 text-xs font-bold uppercase text-muted-foreground">
             <span>Produto</span>
             <span>Qtd.</span>
@@ -103,42 +130,48 @@
           </div>
 
           <div
-            *ngFor="let item of items; trackBy: trackItemById"
-            class="grid grid-cols-[1fr_4.5rem_5rem_7rem_2.5rem] gap-2 border-t bg-card p-2"
+            data-slot="scroll-area"
+            class="product-scroll-area max-h-[28rem] min-h-0 flex-1 overflow-y-auto bg-secondary/25 pr-1"
           >
-            <input
-              class="rounded-md border bg-background px-3 py-2 text-sm"
-              [value]="item.product"
-              (input)="updateItem(item.id, 'product', $any($event.target).value)"
-            />
-
-            <input
-              class="rounded-md border bg-background px-2 py-2 text-sm"
-              type="number"
-              [value]="item.quantity"
-              (input)="updateItem(item.id, 'quantity', $any($event.target).value)"
-            />
-
-            <input
-              class="rounded-md border bg-background px-2 py-2 text-sm"
-              [value]="item.unit"
-              (input)="updateItem(item.id, 'unit', $any($event.target).value)"
-            />
-
-            <input
-              class="rounded-md border bg-background px-2 py-2 text-sm"
-              type="number"
-              [value]="item.unitPrice"
-              (input)="updateItem(item.id, 'unitPrice', $any($event.target).value)"
-            />
-
-            <button
-              class="rounded-md text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive"
-              aria-label="Remover produto"
-              (click)="removeItem(item.id)"
+            <div
+              *ngFor="let item of items; trackBy: trackItemById"
+              class="grid grid-cols-[1fr_4.5rem_5rem_7rem_2.5rem] gap-2 border-t bg-card p-2 transition-colors hover:bg-secondary/45"
             >
-              <lucide-angular [img]="Trash2" class="mx-auto size-4"></lucide-angular>
-            </button>
+              <input
+                class="rounded-md border bg-background px-3 py-2 text-sm"
+                [value]="item.product"
+                (input)="updateItem(item.id, 'product', $any($event.target).value)"
+                placeholder="Nome do Produto"
+              />
+
+              <input
+                class="rounded-md border bg-background px-2 py-2 text-sm"
+                type="number"
+                [value]="item.quantity"
+                (input)="updateItem(item.id, 'quantity', $any($event.target).value)"
+              />
+
+              <input
+                class="rounded-md border bg-background px-2 py-2 text-sm"
+                [value]="item.unit"
+                (input)="updateItem(item.id, 'unit', $any($event.target).value)"
+              />
+
+              <input
+                class="rounded-md border bg-background px-2 py-2 text-sm"
+                type="number"
+                [value]="item.unitPrice"
+                (input)="updateItem(item.id, 'unitPrice', $any($event.target).value)"
+              />
+
+              <button
+                class="rounded-md text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive"
+                aria-label="Remover produto"
+                (click)="removeItem(item.id)"
+              >
+                <lucide-angular [img]="Trash2" class="mx-auto size-4"></lucide-angular>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -161,7 +194,7 @@
         </div>
       </section>
 
-      <section class="rounded-lg border bg-card p-4 shadow-panel sm:p-6">
+      <section class="h-full rounded-lg border bg-card p-4 shadow-panel sm:p-6">
         <div class="mb-5 flex items-center justify-between gap-4">
           <div>
             <h2 class="text-3xl font-semibold">Derivar novos orçamentos</h2>
@@ -260,25 +293,36 @@
     </div>
 
     <section class="rounded-lg border bg-card p-4 shadow-panel sm:p-6">
-      <div class="mb-5 flex items-end justify-between gap-4">
+      <div class="mb-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
         <div>
-          <h2 class="text-3xl font-semibold">Orçamentos gerados</h2>
+          <div class="flex flex-wrap items-center gap-3">
+            <h2 class="text-3xl font-semibold">Orçamentos gerados</h2>
+
+            <span
+              *ngIf="quotes.length > 0"
+              class="rounded-full border border-border bg-secondary px-3 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+            >
+              {{ quotes.length }} {{ quotes.length === 1 ? 'versão' : 'versões' }}
+            </span>
+          </div>
+
           <p class="text-sm text-muted-foreground">
             Histórico das versões criadas nesta sessão.
           </p>
         </div>
 
-        <span
-          *ngIf="quotes.length > 0"
-          class="rounded-full border border-border bg-secondary px-3 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+        <button
+          class="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-panel/20 bg-panel px-4 text-sm font-medium text-panel-foreground shadow-command transition-colors hover:bg-panel/90"
+          type="button"
         >
-          {{ quotes.length }} {{ quotes.length === 1 ? 'versão' : 'versões' }}
-        </span>
+          <lucide-angular [img]="UsersRound" class="size-4"></lucide-angular>
+          Comparar Orçamentos
+        </button>
       </div>
 
       <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <article
-          *ngFor="let quote of quotes"
+          *ngFor="let quote of quotes; let quoteIndex = index"
           class="quote-card group rounded-xl p-5"
         >
           <div class="relative z-10 flex items-start justify-between gap-3">
@@ -335,6 +379,11 @@
             <span class="truncate">{{ quote.company.taxId }}</span>
           </div>
 
+          <div class="relative z-10 mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
+            <span class="truncate">Entrega: {{ quote.deliveryTime }}</span>
+            <span class="truncate">Pag.: {{ quote.paymentMethod }}</span>
+          </div>
+
           <div class="relative z-10 mt-4 flex items-end justify-between gap-3">
             <div>
               <p class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -345,14 +394,24 @@
               </p>
             </div>
 
-            <button
-              class="inline-flex h-9 items-center justify-center gap-2 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground shadow-command transition-colors hover:bg-primary/90"
-              [attr.aria-label]="'Baixar ' + quote.label"
-              (click)="downloadQuote(quote)"
-            >
-              <lucide-angular [img]="Download" class="size-4"></lucide-angular>
-              Baixar
-            </button>
+            <div class="flex items-center gap-2">
+              <button
+                class="inline-flex h-9 items-center justify-center rounded-md border border-destructive bg-background px-3 text-sm font-medium text-destructive shadow-sm transition-colors hover:bg-destructive hover:text-destructive-foreground"
+                [attr.aria-label]="'Apagar ' + quote.label"
+                (click)="deleteQuote(quoteIndex)"
+              >
+                <lucide-angular [img]="Trash2" class="size-4"></lucide-angular>
+              </button>
+
+              <button
+                class="inline-flex h-9 items-center justify-center gap-2 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground shadow-command transition-colors hover:bg-primary/90"
+                [attr.aria-label]="'Baixar ' + quote.label"
+                (click)="downloadQuote(quote)"
+              >
+                <lucide-angular [img]="Download" class="size-4"></lucide-angular>
+                Baixar
+              </button>
+            </div>
           </div>
         </article>
 

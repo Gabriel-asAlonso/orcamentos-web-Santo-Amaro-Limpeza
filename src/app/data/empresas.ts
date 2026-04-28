@@ -30,7 +30,7 @@ export const COMPANIES: Company[] = [
     address: 'Av. das Nacoes, 420 - Sao Paulo/SP',
     identity: 'Verde institucional, selo executivo e rodape fiscal',
     taxId: '12.584.220/0001-76',
-    logoPath: 'assets/logos/aurora.png',
+    logoPath: '/logoExemplo.jpeg',
     contact: 'Ricardo / Andrea',
     phone: '8888-8888',
     email: 'splash@splashconsultoria.com.br',
@@ -42,7 +42,7 @@ export const COMPANIES: Company[] = [
     address: 'Rua Itapua, 88 - Curitiba/PR',
     identity: 'Marca ambar, cabecalho comercial e assinatura digital',
     taxId: '08.991.310/0001-44',
-    logoPath: 'assets/logos/norte.png'
+    logoPath: '/logoExemplo2.jpg'
   },
   {
     id: 'delta',
