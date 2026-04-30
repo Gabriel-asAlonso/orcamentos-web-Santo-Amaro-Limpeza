@@ -6,6 +6,10 @@ export type QuoteItem = {
   quantity: number;
   unit: string;
   unitPrice: number;
+
+  code?: string;
+  reference?: string;
+  discount?: number;
 };
 
 export type ExcelImportResult = {

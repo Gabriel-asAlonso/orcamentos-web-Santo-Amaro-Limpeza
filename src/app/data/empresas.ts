@@ -9,6 +9,7 @@ export type Company = {
   phone?: string;
   email?: string;
   postalCode?: string;
+  cnpj?: string;
 };
 
 export const COMPANIES: Company[] = [
@@ -22,7 +23,8 @@ export const COMPANIES: Company[] = [
     contact: 'Ricardo / Andrea',
     phone: '3384-5096',
     email: 'splash@splashconsultoria.com.br',
-    postalCode: '04334-100'
+    postalCode: '04334-100',
+    cnpj: '12.584.220/0001-76'
   },
   {
     id: 'aurora',
@@ -34,7 +36,9 @@ export const COMPANIES: Company[] = [
     contact: 'Ricardo / Andrea',
     phone: '8888-8888',
     email: 'splash@splashconsultoria.com.br',
-    postalCode: '04334-100'
+    postalCode: '04334-100',
+    cnpj: '12.888.888/0001-76'
+
   },
   {
     id: 'norte',

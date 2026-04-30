@@ -227,7 +227,7 @@
           <div class="mt-3 flex items-center gap-3">
             <button
               class="inline-flex size-10 items-center justify-center rounded-md border border-input bg-background text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
-              (click)="adjustment = adjustment - 1"
+              (click)="baseAdjustment = baseAdjustment - 1"
             >
               <lucide-angular [img]="ArrowDown" class="size-4"></lucide-angular>
             </button>
@@ -235,12 +235,12 @@
             <input
               class="h-11 min-w-0 flex-1 rounded-md border bg-background px-4 text-center text-lg font-bold"
               type="number"
-              [(ngModel)]="adjustment"
+              [(ngModel)]="baseAdjustment"
             />
 
             <button
               class="inline-flex size-10 items-center justify-center rounded-md border border-input bg-background text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
-              (click)="adjustment = adjustment + 1"
+              (click)="baseAdjustment = baseAdjustment + 1"
             >
               <lucide-angular [img]="ArrowUp" class="size-4"></lucide-angular>
             </button>
@@ -256,7 +256,7 @@
             <strong>{{ baseQuote ? nextLabel : 'Prévia bloqueada' }}</strong>
 
             <span class="rounded-full bg-warning px-3 py-1 text-xs font-bold text-warning-foreground">
-              {{ adjustment }}%
+              {{ baseAdjustment }}%
             </span>
           </div>
 
@@ -323,7 +323,7 @@
       <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <article
           *ngFor="let quote of quotes; let quoteIndex = index"
-          class="quote-card group rounded-xl p-5"
+          class="quote-card group flex h-full flex-col rounded-xl p-5"
         >
           <div class="relative z-10 flex items-start justify-between gap-3">
             <div class="flex items-center gap-3">
@@ -384,31 +384,41 @@
             <span class="truncate">Pag.: {{ quote.paymentMethod }}</span>
           </div>
 
-          <div class="relative z-10 mt-4 flex items-end justify-between gap-3">
-            <div>
+          <div class="relative z-10 mt-auto flex items-end justify-between gap-2 pt-4">
+            <div class="min-w-0">
               <p class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Total
               </p>
-              <p class="text-2xl font-bold tracking-tight text-foreground">
+              <p class="text-xl font-bold tracking-tight text-foreground">
                 {{ currency(quote.items.reduce(sumItems, 0)) }}
               </p>
             </div>
 
-            <div class="flex items-center gap-2">
+            <div class="ml-auto flex shrink-0 items-center gap-1.5">
               <button
-                class="inline-flex h-9 items-center justify-center rounded-md border border-destructive bg-background px-3 text-sm font-medium text-destructive shadow-sm transition-colors hover:bg-destructive hover:text-destructive-foreground"
+                class="inline-flex h-8 items-center justify-center rounded-md border border-destructive bg-destructive px-2 text-xs font-medium text-white shadow-sm transition-colors hover:bg-destructive hover:text-destructive-foreground"
                 [attr.aria-label]="'Apagar ' + quote.label"
                 (click)="deleteQuote(quoteIndex)"
               >
-                <lucide-angular [img]="Trash2" class="size-4"></lucide-angular>
+                <lucide-angular [img]="Trash2" class="size-3.5"></lucide-angular>
               </button>
 
               <button
-                class="inline-flex h-9 items-center justify-center gap-2 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground shadow-command transition-colors hover:bg-primary/90"
+                class="inline-flex h-8 items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-input bg-background px-2 text-xs font-medium text-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+                [attr.aria-label]="'Editar ' + quote.label"
+                type="button"
+                (click)="openEditQuote(quoteIndex)"
+              >
+                <lucide-angular [img]="Pencil" class="size-3.5"></lucide-angular>
+                Editar
+              </button>
+
+              <button
+                class="inline-flex h-8 items-center justify-center gap-1.5 whitespace-nowrap rounded-md bg-primary px-2 text-xs font-medium text-primary-foreground shadow-command transition-colors hover:bg-primary/90"
                 [attr.aria-label]="'Baixar ' + quote.label"
                 (click)="downloadQuote(quote)"
               >
-                <lucide-angular [img]="Download" class="size-4"></lucide-angular>
+                <lucide-angular [img]="Download" class="size-3.5"></lucide-angular>
                 Baixar
               </button>
             </div>
@@ -425,4 +435,119 @@
       </div>
     </section>
   </section>
+
+  <div
+    *ngIf="editingQuote as quote"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="'Editar ' + quote.label"
+    (click)="closeEditQuote()"
+  >
+    <section
+      class="w-full max-w-3xl rounded-lg border bg-card p-5 text-card-foreground shadow-panel sm:p-6"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="mb-5 flex items-start justify-between gap-4">
+        <div>
+          <h2 class="text-xl font-semibold">Editar {{ quote.label }}</h2>
+          <p class="text-sm text-muted-foreground">
+            {{ quote.company.name }} — ajuste produtos, quantidades, unidades e valores.
+          </p>
+        </div>
+
+        <button
+          class="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+          type="button"
+          aria-label="Fechar edição"
+          (click)="closeEditQuote()"
+        >
+          <lucide-angular [img]="X" class="size-4"></lucide-angular>
+        </button>
+      </div>
+
+      <div class="overflow-hidden rounded-lg border">
+        <div class="grid grid-cols-[1fr_5rem_5.5rem_8rem_2.5rem] gap-2 bg-muted px-3 py-2 text-xs font-bold uppercase text-muted-foreground">
+          <span>Produto</span>
+          <span>Qtd.</span>
+          <span>Unid.</span>
+          <span>Valor</span>
+          <span></span>
+        </div>
+
+        <div class="max-h-[18rem] overflow-y-auto bg-secondary/25">
+          <div
+            *ngFor="let item of quote.items; trackBy: trackItemById"
+            class="grid grid-cols-[1fr_5rem_5.5rem_8rem_2.5rem] gap-2 border-t bg-card p-2"
+          >
+            <input
+              class="min-w-0 rounded-md border bg-background px-3 py-2 text-sm"
+              [value]="item.product"
+              (input)="updateEditingItem(item.id, 'product', $any($event.target).value)"
+              placeholder="Nome do Produto"
+            />
+
+            <input
+              class="min-w-0 rounded-md border bg-background px-2 py-2 text-sm"
+              type="number"
+              [value]="item.quantity"
+              (input)="updateEditingItem(item.id, 'quantity', $any($event.target).value)"
+            />
+
+            <input
+              class="min-w-0 rounded-md border bg-background px-2 py-2 text-sm"
+              [value]="item.unit"
+              (input)="updateEditingItem(item.id, 'unit', $any($event.target).value)"
+            />
+
+            <input
+              class="min-w-0 rounded-md border bg-background px-2 py-2 text-sm"
+              type="number"
+              [value]="item.unitPrice"
+              (input)="updateEditingItem(item.id, 'unitPrice', $any($event.target).value)"
+            />
+
+            <button
+              class="rounded-md text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive"
+              type="button"
+              aria-label="Remover produto"
+              (click)="removeEditingItem(item.id)"
+            >
+              <lucide-angular [img]="Trash2" class="mx-auto size-4"></lucide-angular>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <button
+          class="inline-flex h-9 w-fit items-center justify-center gap-2 rounded-md border border-input bg-background px-4 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+          type="button"
+          (click)="addEditingItem()"
+        >
+          <lucide-angular [img]="Plus" class="size-4"></lucide-angular>
+          Adicionar produto
+        </button>
+
+        <div class="text-left sm:text-right">
+          <p class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Total
+          </p>
+          <p class="text-2xl font-bold tracking-tight text-foreground">
+            {{ currency(editingTotal) }}
+          </p>
+        </div>
+      </div>
+
+      <div class="mt-5 flex justify-end">
+        <button
+          class="inline-flex h-10 items-center justify-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground shadow-command transition-colors hover:bg-primary/90"
+          type="button"
+          (click)="saveEditingQuote()"
+        >
+          Concluir
+        </button>
+      </div>
+    </section>
+  </div>
 </main>

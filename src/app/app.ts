@@ -11,9 +11,11 @@ import {
   FileSpreadsheet,
   FileText,
   LucideAngularModule,
+  Pencil,
   Plus,
   Trash2,
-  UsersRound
+  UsersRound,
+  X
 } from 'lucide-angular';
 import { Quote, QuoteItem } from './model/orcamento.model';
 import { ExcelGeneratorService } from './services/excel-generator.service';
@@ -37,25 +39,48 @@ export class App {
   Download = Download;
   FileSpreadsheet = FileSpreadsheet;
   FileText = FileText;
+  Pencil = Pencil;
   Plus = Plus;
   Trash2 = Trash2;
   UsersRound = UsersRound;
+  X = X;
 
   companies: Company[] = COMPANIES;
 
   mode: 'manual' | 'excel' = 'manual';
   companyId = this.companies[0].id;
   derivedCompanyId = this.companies[1]?.id ?? this.companies[0].id;
-  adjustment = 0;
+  baseAdjustment = 0;
+  derivedAdjustment = 0;
   quotes: Quote[] = [];
   excelStatus = 'Aguardando planilha com colunas: empresa, produto, quantidade, valor.';
   isImportingExcel = false;
   deliveryTime = '';
   paymentMethod = '';
+  editingQuoteIndex: number | null = null;
+  editingQuote: Quote | null = null;
 
   items: QuoteItem[] = [
-    { id: 1, product: 'Copo térmico personalizado', quantity: 120, unit: 'peça', unitPrice: 10 },
-    { id: 2, product: 'Kit boas-vindas premium', quantity: 40, unit: 'kit', unitPrice: 86.5 }
+    {
+      id: 1,
+      code: '1',
+      reference: '',
+      product: 'Copo térmico personalizado',
+      quantity: 120,
+      unit: 'peça',
+      unitPrice: 10,
+      discount: 0
+    },
+    {
+      id: 2,
+      code: '2',
+      reference: '',
+      product: 'Kit boas-vindas premium',
+      quantity: 40,
+      unit: 'kit',
+      unitPrice: 86.5,
+      discount: 0
+    }
   ];
 
   get selectedCompany() {
@@ -67,7 +92,7 @@ export class App {
   }
 
   get previewItems() {
-    return this.baseQuote ? this.adjustedItems(this.baseQuote.items, this.adjustment) : [];
+    return this.baseQuote ? this.adjustedItems(this.baseQuote.items, this.derivedAdjustment) : [];
   }
 
   get nextLabel() {
@@ -75,11 +100,15 @@ export class App {
   }
 
   get currentTotal() {
-    return this.items.reduce((total, item) => total + item.quantity * item.unitPrice, 0);
+    return this.adjustedItems(this.items, this.baseAdjustment).reduce(this.sumItems, 0);
   }
 
   get previewTotal() {
-    return this.previewItems.reduce((total, item) => total + item.quantity * item.unitPrice, 0);
+    return this.previewItems.reduce(this.sumItems, 0);
+  }
+
+  get editingTotal() {
+    return this.editingQuote?.items.reduce(this.sumItems, 0) ?? 0;
   }
 
   currency(value: number) {
@@ -87,7 +116,10 @@ export class App {
   }
 
   adjustedItems(items: QuoteItem[], percentage: number) {
-    return items.map(item => ({ ...item, unitPrice: item.unitPrice * (1 + percentage / 100) }));
+    return items.map(item => ({
+      ...item,
+      unitPrice: Number((item.unitPrice * (1 + percentage / 100)).toFixed(2))
+    }));
   }
 
   updateItem(id: number, field: keyof QuoteItem, value: string) {
@@ -95,25 +127,128 @@ export class App {
       item.id === id
         ? {
             ...item,
-            [field]: field === 'product' || field === 'unit' ? value : Math.max(0, Number(value) || 0)
+            [field]: this.isTextItemField(field) ? value : this.parsePositiveNumber(value)
           }
         : item
     );
   }
 
   sumItems(total: number, item: QuoteItem) {
-    return total + item.quantity * item.unitPrice;
+    const discount = item.discount ?? 0;
+    const subtotal = item.quantity * item.unitPrice;
+    const totalWithDiscount = subtotal - subtotal * (discount / 100);
+
+    return total + totalWithDiscount;
   }
 
   addItem() {
     this.items = [
       ...this.items,
-      { id: Date.now(), product: '', quantity: 1, unit: 'unid.', unitPrice: 0 }
+      {
+        id: Date.now(),
+        code: String(this.items.length + 1),
+        reference: '',
+        product: '',
+        quantity: 1,
+        unit: 'unid.',
+        unitPrice: 0,
+        discount: 0
+      }
     ];
   }
 
   removeItem(id: number) {
     this.items = this.items.filter(item => item.id !== id);
+  }
+
+  openEditQuote(index: number) {
+    const quote = this.quotes[index];
+
+    if (!quote) return;
+
+    this.editingQuoteIndex = index;
+    this.editingQuote = {
+      ...quote,
+      items: quote.items.map(item => ({ ...item }))
+    };
+  }
+
+  closeEditQuote() {
+    this.editingQuoteIndex = null;
+    this.editingQuote = null;
+  }
+
+  updateEditingItem(id: number, field: keyof QuoteItem, value: string) {
+    if (!this.editingQuote) return;
+
+    this.editingQuote = {
+      ...this.editingQuote,
+      items: this.editingQuote.items.map(item =>
+        item.id === id
+          ? {
+              ...item,
+              [field]: this.isTextItemField(field) ? value : this.parsePositiveNumber(value)
+            }
+          : item
+      )
+    };
+  }
+
+  addEditingItem() {
+    if (!this.editingQuote) return;
+
+    this.editingQuote = {
+      ...this.editingQuote,
+      items: [
+        ...this.editingQuote.items,
+        {
+          id: Date.now(),
+          code: String(this.editingQuote.items.length + 1),
+          reference: '',
+          product: '',
+          quantity: 1,
+          unit: 'unid.',
+          unitPrice: 0,
+          discount: 0
+        }
+      ]
+    };
+  }
+
+  removeEditingItem(id: number) {
+    if (!this.editingQuote) return;
+
+    this.editingQuote = {
+      ...this.editingQuote,
+      items: this.editingQuote.items.filter(item => item.id !== id)
+    };
+  }
+
+  saveEditingQuote() {
+    if (this.editingQuoteIndex === null || !this.editingQuote) return;
+
+    const editedItems = this.editingQuote.items.map(item => ({ ...item }));
+
+    if (this.editingQuoteIndex === 0) {
+      this.quotes = this.quotes.map((quote, index) => ({
+        ...quote,
+        items: index === 0 ? editedItems : this.adjustedItems(editedItems, quote.adjustment)
+      }));
+
+      this.closeEditQuote();
+      return;
+    }
+
+    this.quotes = this.quotes.map((quote, index) =>
+      index === this.editingQuoteIndex
+        ? {
+            ...quote,
+            items: editedItems
+          }
+        : quote
+    );
+
+    this.closeEditQuote();
   }
 
   trackItemById(index: number, item: QuoteItem) {
@@ -127,8 +262,8 @@ export class App {
         company: this.selectedCompany,
         deliveryTime: this.deliveryTime,
         paymentMethod: this.paymentMethod,
-        items: this.items.map(item => ({ ...item })),
-        adjustment: 0,
+        items: this.adjustedItems(this.items, this.baseAdjustment),
+        adjustment: this.baseAdjustment,
         source
       }
     ];
@@ -147,7 +282,7 @@ export class App {
         deliveryTime: this.baseQuote.deliveryTime,
         paymentMethod: this.baseQuote.paymentMethod,
         items: this.previewItems.map(item => ({ ...item })),
-        adjustment: this.adjustment,
+        adjustment: this.derivedAdjustment,
         source: 'Derivado do Orçamento A'
       }
     ];
@@ -180,7 +315,13 @@ export class App {
     try {
       const imported = await this.excelImporter.importProducts(file);
 
-      this.items = imported.items;
+      this.items = imported.items.map((item, index) => ({
+        ...item,
+        code: item.code ?? String(index + 1),
+        reference: item.reference ?? '',
+        discount: item.discount ?? 0
+      }));
+
       this.quotes = [];
 
       if (imported.deliveryTime) {
@@ -208,5 +349,14 @@ export class App {
     } catch (error) {
       console.error('Erro ao gerar Excel:', error);
     }
+  }
+
+  private isTextItemField(field: keyof QuoteItem) {
+    return field === 'product' || field === 'unit' || field === 'code' || field === 'reference';
+  }
+
+  private parsePositiveNumber(value: string) {
+    const normalizedValue = value.replace(',', '.');
+    return Math.max(0, Number(normalizedValue) || 0);
   }
 }
