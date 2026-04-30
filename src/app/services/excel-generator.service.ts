@@ -30,6 +30,7 @@ export class ExcelGeneratorService {
     }
 
     this.prepareWorksheetColumns(worksheet);
+    this.clearWorksheetImages(worksheet);
 
     await this.insertCompanyLogo(workbook, worksheet, quote.company.logoPath);
 
@@ -68,7 +69,7 @@ export class ExcelGeneratorService {
 
     const linhaModelo = worksheet.getRow(linhaInicial);
     const linhaTotalModelo = worksheet.getRow(linhaTotalOriginal);
-    const alturaProduto = linhaModelo.height ?? 18;
+    const alturaProduto = 16;
     const alturaTotal = Math.max(linhaTotalModelo.height ?? 24, 26);
 
     const total = items.reduce((sum, item) => {
@@ -126,9 +127,18 @@ export class ExcelGeneratorService {
       linha.getCell(15).numFmt = 'R$ #,##0.00';
       linha.getCell(16).numFmt = 'R$ #,##0.00';
 
+      linha.getCell(1).font = { size: 9 };
+      linha.getCell(2).font = { size: 9 };
+      linha.getCell(4).font = { size: 9 };
+      linha.getCell(12).font = { size: 9 };
+      linha.getCell(13).font = { size: 9 };
+      linha.getCell(14).font = { size: 9 };
+      linha.getCell(15).font = { size: 9 };
+      linha.getCell(16).font = { size: 9 };
+
       linha.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
-      linha.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' };
-      linha.getCell(4).alignment = { horizontal: 'left', vertical: 'middle' };
+      linha.getCell(2).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+      linha.getCell(4).alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
       linha.getCell(12).alignment = { horizontal: 'center', vertical: 'middle' };
       linha.getCell(13).alignment = { horizontal: 'center', vertical: 'middle' };
       linha.getCell(14).alignment = { horizontal: 'center', vertical: 'middle' };
@@ -174,8 +184,8 @@ export class ExcelGeneratorService {
     worksheet.getCell(`A${linhaTotal}`).value = 'Total Produtos:';
     worksheet.getCell(`P${linhaTotal}`).value = total;
 
-    worksheet.getCell(`A${linhaTotal}`).font = { bold: true, size: 12 };
-    worksheet.getCell(`P${linhaTotal}`).font = { bold: true, size: 12 };
+    worksheet.getCell(`A${linhaTotal}`).font = { bold: true, size: 11 };
+    worksheet.getCell(`P${linhaTotal}`).font = { bold: true, size: 11 };
     worksheet.getCell(`P${linhaTotal}`).numFmt = 'R$ #,##0.00';
 
     worksheet.getCell(`A${linhaTotal}`).alignment = {
@@ -194,8 +204,46 @@ export class ExcelGeneratorService {
   }
 
   private prepareWorksheetColumns(worksheet: ExcelJS.Worksheet) {
-    worksheet.getColumn(15).width = 16;
-    worksheet.getColumn(16).width = 20;
+    worksheet.getColumn(1).width = 7;
+    worksheet.getColumn(2).width = 8;
+    worksheet.getColumn(3).width = 8;
+
+    worksheet.getColumn(4).width = 7;
+    worksheet.getColumn(5).width = 7;
+    worksheet.getColumn(6).width = 7;
+    worksheet.getColumn(7).width = 7;
+    worksheet.getColumn(8).width = 7;
+    worksheet.getColumn(9).width = 7;
+    worksheet.getColumn(10).width = 7;
+    worksheet.getColumn(11).width = 7;
+
+    worksheet.getColumn(12).width = 8;
+    worksheet.getColumn(13).width = 7;
+    worksheet.getColumn(14).width = 7;
+    worksheet.getColumn(15).width = 12;
+    worksheet.getColumn(16).width = 13;
+
+    worksheet.pageSetup = {
+      paperSize: 9,
+      orientation: 'landscape',
+      fitToPage: true,
+      fitToWidth: 1,
+      fitToHeight: 1,
+      margins: {
+        left: 0.2,
+        right: 0.2,
+        top: 0.25,
+        bottom: 0.25,
+        header: 0.1,
+        footer: 0.1
+      }
+    };
+
+    worksheet.views = [
+      {
+        showGridLines: false
+      }
+    ];
   }
 
   private applyProductRowLayout(worksheet: ExcelJS.Worksheet, rowNumber: number) {
@@ -270,6 +318,22 @@ export class ExcelGeneratorService {
     }
   }
 
+  private clearWorksheetImages(worksheet: ExcelJS.Worksheet) {
+    const sheet = worksheet as any;
+
+    if (sheet._images?.length) {
+      sheet._images = [];
+    }
+
+    if (sheet._media?.length) {
+      sheet._media = [];
+    }
+
+    if (sheet._drawing) {
+      sheet._drawing = undefined;
+    }
+  }
+
   private setOuterBorder(
     cell: ExcelJS.Cell,
     top: boolean,
@@ -330,10 +394,10 @@ export class ExcelGeneratorService {
       extension: this.getImageExtension(resolvedLogoPath)
     });
 
-    worksheet.addImage(logoId, {
-      tl: { col: 0.05, row: 1.05 } as any,
-      br: { col: 2.0, row: 5.35 } as any
-    });
+worksheet.addImage(logoId, {
+  tl: { col: 0.15, row: 1.2 } as any,
+  br: { col: 2.15, row: 5.85 } as any
+});
   }
 
   private blobToBase64(blob: Blob): Promise<string> {

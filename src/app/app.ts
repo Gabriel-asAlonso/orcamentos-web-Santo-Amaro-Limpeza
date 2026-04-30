@@ -7,6 +7,7 @@ import {
   ArrowDown,
   ArrowUp,
   Building2,
+  Check,
   Download,
   FileSpreadsheet,
   FileText,
@@ -36,6 +37,7 @@ export class App {
   ArrowDown = ArrowDown;
   ArrowUp = ArrowUp;
   Building2 = Building2;
+  Check = Check;
   Download = Download;
   FileSpreadsheet = FileSpreadsheet;
   FileText = FileText;
@@ -58,7 +60,9 @@ export class App {
   deliveryTime = '';
   paymentMethod = '';
   editingQuoteIndex: number | null = null;
+  editingQuoteMode: 'saved' | 'derived-draft' | null = null;
   editingQuote: Quote | null = null;
+  derivedDraftItems: QuoteItem[] | null = null;
 
   items: QuoteItem[] = [
     {
@@ -92,7 +96,9 @@ export class App {
   }
 
   get previewItems() {
-    return this.baseQuote ? this.adjustedItems(this.baseQuote.items, this.derivedAdjustment) : [];
+    if (!this.baseQuote) return [];
+
+    return this.derivedDraftItems ?? this.adjustedItems(this.baseQuote.items, this.derivedAdjustment);
   }
 
   get nextLabel() {
@@ -161,20 +167,45 @@ export class App {
     this.items = this.items.filter(item => item.id !== id);
   }
 
+  setDerivedAdjustment(value: number | string) {
+    this.derivedAdjustment = Number(value) || 0;
+    this.derivedDraftItems = null;
+  }
+
   openEditQuote(index: number) {
     const quote = this.quotes[index];
 
     if (!quote) return;
 
     this.editingQuoteIndex = index;
+    this.editingQuoteMode = 'saved';
     this.editingQuote = {
       ...quote,
       items: quote.items.map(item => ({ ...item }))
     };
   }
 
+  openEditDerivedQuote() {
+    if (!this.baseQuote) return;
+
+    const company = this.companies.find(entry => entry.id === this.derivedCompanyId) ?? this.companies[0];
+
+    this.editingQuoteIndex = null;
+    this.editingQuoteMode = 'derived-draft';
+    this.editingQuote = {
+      label: this.nextLabel,
+      company,
+      deliveryTime: this.baseQuote.deliveryTime,
+      paymentMethod: this.baseQuote.paymentMethod,
+      items: this.previewItems.map(item => ({ ...item })),
+      adjustment: this.derivedAdjustment,
+      source: 'Derivado do Orçamento A'
+    };
+  }
+
   closeEditQuote() {
     this.editingQuoteIndex = null;
+    this.editingQuoteMode = null;
     this.editingQuote = null;
   }
 
@@ -225,9 +256,17 @@ export class App {
   }
 
   saveEditingQuote() {
-    if (this.editingQuoteIndex === null || !this.editingQuote) return;
+    if (!this.editingQuote) return;
 
     const editedItems = this.editingQuote.items.map(item => ({ ...item }));
+
+    if (this.editingQuoteMode === 'derived-draft') {
+      this.derivedDraftItems = editedItems;
+      this.closeEditQuote();
+      return;
+    }
+
+    if (this.editingQuoteIndex === null) return;
 
     if (this.editingQuoteIndex === 0) {
       this.quotes = this.quotes.map((quote, index) => ({
@@ -267,6 +306,7 @@ export class App {
         source
       }
     ];
+    this.derivedDraftItems = null;
   }
 
   generateDerivedQuote() {
@@ -286,11 +326,13 @@ export class App {
         source: 'Derivado do Orçamento A'
       }
     ];
+    this.derivedDraftItems = null;
   }
 
   deleteQuote(index: number) {
     if (index === 0) {
       this.quotes = [];
+      this.derivedDraftItems = null;
       return;
     }
 
