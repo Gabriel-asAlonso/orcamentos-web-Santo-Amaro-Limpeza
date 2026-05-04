@@ -29,26 +29,50 @@ export class ExcelGeneratorService {
       throw new Error('Aba da planilha não encontrada');
     }
 
-    this.prepareWorksheetColumns(worksheet);
-    this.clearWorksheetImages(worksheet);
+   this.prepareWorksheetColumns(worksheet);
+this.clearWorksheetImages(worksheet);
 
-    await this.insertCompanyLogo(workbook, worksheet, quote.company.logoPath);
+await this.insertHeaderBorder(workbook, worksheet);
+await this.insertCompanyLogo(workbook, worksheet, quote.company.logoPath);
 
     const companyDocument = quote.company.cnpj || quote.company.taxId || '';
+    const customer = quote.customerData;
 
-    worksheet.getCell('D4').value = new Date().toLocaleDateString('pt-BR');
+    worksheet.getCell('A2').value = '';
+    worksheet.getCell('A3').value = quote.company.name;
+    worksheet.getCell('A3').alignment = { horizontal: 'center', vertical: 'middle' };
+    worksheet.getCell('A3').font = { bold: true, size: 11 };
+    worksheet.getCell('C4').value = '';
+    worksheet.getCell('D4').value = '';
+    this.safeMergeCells(worksheet, 'M4:O4');
+    worksheet.getCell('M4').value = `Data: ${new Date().toLocaleDateString('pt-BR')}`;
+    worksheet.getCell('M4').alignment = { horizontal: 'right', vertical: 'middle' };
+    worksheet.getCell('M4').font = { bold: true, size: 10 };
+    worksheet.getCell('N4').font = { bold: true, size: 10 };
     worksheet.getCell('D5').value = companyDocument;
 
-    worksheet.getCell('C7').value = quote.company.name;
-    worksheet.getCell('C8').value = quote.company.name;
-    worksheet.getCell('C9').value = quote.company.address;
-    worksheet.getCell('C11').value = companyDocument;
-
-    worksheet.getCell('C12').value = '';
+    worksheet.getCell('C7').value = customer?.client ?? '';
+    worksheet.getCell('C8').value = customer?.fantasyName ?? customer?.client ?? '';
+    worksheet.getCell('C9').value = customer?.address ?? '';
+    worksheet.getCell('N9').value = customer?.district ?? '';
+    worksheet.getCell('C10').value = customer?.city ?? '';
+    worksheet.getCell('M10').value = customer?.state ?? '';
+    worksheet.getCell('O10').value = customer?.postalCode ?? '';
+    worksheet.getCell('C11').value = customer?.document ?? '';
+    worksheet.getCell('H11').value = customer?.stateRegistration ?? '';
+    worksheet.getCell('N11').value = customer?.region ?? '';
+    worksheet.getCell('C12').value = customer?.freight ?? '';
+    worksheet.getCell('L12').value = 'Forma Pagto. :';
     worksheet.getCell('N12').value = quote.paymentMethod;
-    worksheet.getCell('C14').value = quote.company.identity ?? '';
+    worksheet.getCell('C13').value = customer?.phone ?? '';
+    worksheet.getCell('H13').value = customer?.whatsapp ?? '';
+    worksheet.getCell('N13').value = customer?.priceTable ?? '';
+    worksheet.getCell('C14').value = customer?.contact ?? '';
+    worksheet.getCell('C15').value = customer?.email ?? '';
+    worksheet.getCell('C16').value = customer?.salesperson ?? '';
+    worksheet.getCell('C17').value = customer?.externalSalesperson ?? '';
 
-    this.fillProducts(worksheet, quote.items);
+    this.fillProducts(worksheet, quote.items, quote.deliveryTime);
 
     const arquivo = await workbook.xlsx.writeBuffer();
 
@@ -58,12 +82,11 @@ export class ExcelGeneratorService {
     );
   }
 
-  private fillProducts(worksheet: ExcelJS.Worksheet, items: QuoteItem[]) {
+  private fillProducts(worksheet: ExcelJS.Worksheet, items: QuoteItem[], deliveryTime: string) {
     const linhaInicial = 19;
-    const quantidadeLinhasModelo = 4;
-    const linhaEmBrancoOriginal = 23;
-    const linhaTotalOriginal = 24;
+    const linhaTotalOriginal = this.findTotalProductsRow(worksheet) ?? 25;
     const quantidadeProdutos = items.length;
+    const quantidadeLinhasModelo = Math.max(linhaTotalOriginal - linhaInicial, 1);
     const linhasParaRemover = Math.max(quantidadeLinhasModelo - quantidadeProdutos, 0);
     const linhasParaAdicionar = Math.max(quantidadeProdutos - quantidadeLinhasModelo, 0);
 
@@ -82,7 +105,7 @@ export class ExcelGeneratorService {
 
     if (linhasParaAdicionar > 0) {
       worksheet.spliceRows(
-        linhaEmBrancoOriginal,
+        linhaTotalOriginal,
         0,
         ...Array.from({ length: linhasParaAdicionar }, () => [])
       );
@@ -92,8 +115,7 @@ export class ExcelGeneratorService {
       worksheet.spliceRows(linhaInicial + quantidadeProdutos, linhasParaRemover);
     }
 
-    const linhaEmBranco = linhaInicial + quantidadeProdutos;
-    const linhaTotal = linhaEmBranco + 1;
+    const linhaTotal = linhaInicial + quantidadeProdutos;
 
     items.forEach((item, index) => {
       const rowNumber = linhaInicial + index;
@@ -148,26 +170,11 @@ export class ExcelGeneratorService {
       linha.commit();
     });
 
-    const blankRow = worksheet.getRow(linhaEmBranco);
-
-    blankRow.height = 8;
-
-    for (let colNumber = 1; colNumber <= 16; colNumber++) {
-      const cell = blankRow.getCell(colNumber);
-
-      cell.value = null;
-      cell.border = undefined as any;
-      cell.font = undefined as any;
-      cell.fill = undefined as any;
-      cell.numFmt = '';
-      cell.alignment = undefined as any;
-    }
-
-    blankRow.commit();
-
     const totalRow = worksheet.getRow(linhaTotal);
 
     totalRow.height = alturaTotal;
+    totalRow.hidden = false;
+    totalRow.outlineLevel = 0;
 
     for (let colNumber = 1; colNumber <= 16; colNumber++) {
       const cell = totalRow.getCell(colNumber);
@@ -200,11 +207,17 @@ export class ExcelGeneratorService {
 
     totalRow.commit();
 
-    this.removeRowsAfterTotal(worksheet, linhaTotal);
+    const lastVisibleRow = deliveryTime ? linhaTotal + 1 : linhaTotal;
+
+    if (deliveryTime) {
+      this.applyDeliveryTimeRow(worksheet, lastVisibleRow, deliveryTime);
+    }
+
+    this.removeRowsAfterTotal(worksheet, lastVisibleRow);
   }
 
   private prepareWorksheetColumns(worksheet: ExcelJS.Worksheet) {
-    worksheet.getColumn(1).width = 7;
+    worksheet.getColumn(1).width = 12;
     worksheet.getColumn(2).width = 8;
     worksheet.getColumn(3).width = 8;
 
@@ -296,26 +309,62 @@ export class ExcelGeneratorService {
 
   private removeRowsAfterTotal(worksheet: ExcelJS.Worksheet, linhaTotal: number) {
     const startRow = linhaTotal + 1;
-    const finalRow = Math.max(worksheet.rowCount + 80, startRow + 120);
 
-    for (let rowNumber = startRow; rowNumber <= finalRow; rowNumber++) {
+    if (worksheet.rowCount >= startRow) {
+      worksheet.spliceRows(startRow, worksheet.rowCount - linhaTotal);
+    }
+  }
+
+  private applyDeliveryTimeRow(worksheet: ExcelJS.Worksheet, rowNumber: number, deliveryTime: string) {
+    this.safeMergeCells(worksheet, `D${rowNumber}:P${rowNumber}`);
+
+    const row = worksheet.getRow(rowNumber);
+    const labelCell = row.getCell(1);
+    const cell = row.getCell(4);
+
+    row.height = 22;
+    row.hidden = false;
+    row.outlineLevel = 0;
+    labelCell.value = 'Prazo de Entrega:';
+    cell.value = deliveryTime;
+    labelCell.font = { bold: true, size: 10 };
+    cell.font = { bold: true, size: 10 };
+    labelCell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: false };
+    cell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: false };
+    labelCell.border = {
+      top: { style: 'thin' }
+    };
+    cell.border = {
+      top: { style: 'thin' }
+    };
+
+    for (let colNumber = 2; colNumber <= 16; colNumber++) {
+      const rowCell = row.getCell(colNumber);
+
+      if (colNumber === 4) continue;
+
+      rowCell.value = null;
+      rowCell.border = undefined as any;
+      rowCell.fill = undefined as any;
+    }
+
+    row.commit();
+  }
+
+  private findTotalProductsRow(worksheet: ExcelJS.Worksheet) {
+    for (let rowNumber = 1; rowNumber <= worksheet.rowCount; rowNumber++) {
       const row = worksheet.getRow(rowNumber);
 
-      for (let colNumber = 1; colNumber <= 20; colNumber++) {
-        const cell = row.getCell(colNumber);
+      for (let colNumber = 1; colNumber <= 16; colNumber++) {
+        const value = String(row.getCell(colNumber).value ?? '').trim().toLowerCase();
 
-        cell.value = null;
-        cell.border = undefined as any;
-        cell.font = undefined as any;
-        cell.fill = undefined as any;
-        cell.numFmt = '';
-        cell.alignment = undefined as any;
+        if (value.includes('total produtos')) {
+          return rowNumber;
+        }
       }
-
-      row.height = 0;
-      row.hidden = true;
-      row.commit();
     }
+
+    return undefined;
   }
 
   private clearWorksheetImages(worksheet: ExcelJS.Worksheet) {
@@ -371,6 +420,25 @@ export class ExcelGeneratorService {
     if (source.fill) target.fill = { ...source.fill };
   }
 
+  private async insertHeaderBorder(workbook: ExcelJS.Workbook, worksheet: ExcelJS.Worksheet) {
+  const borderResponse = await fetch('assets/templates/header-border.png');
+
+  if (!borderResponse.ok) return;
+
+  const borderBlob = await borderResponse.blob();
+  const borderBase64 = await this.blobToBase64(borderBlob);
+
+  const borderId = workbook.addImage({
+    base64: borderBase64,
+    extension: 'png'
+  });
+
+  worksheet.addImage(borderId, {
+    tl: { col: 0.05, row: 1.05 } as any,
+    br: { col: 16.3, row: 6.15 } as any
+  });
+}
+
   private async insertCompanyLogo(
     workbook: ExcelJS.Workbook,
     worksheet: ExcelJS.Worksheet,
@@ -395,8 +463,8 @@ export class ExcelGeneratorService {
     });
 
 worksheet.addImage(logoId, {
-  tl: { col: 0.15, row: 1.2 } as any,
-  br: { col: 2.15, row: 5.85 } as any
+  tl: { col: 0.99, row: 2.20 } as any,
+  ext: { width: 86, height: 86 }
 });
   }
 
@@ -412,4 +480,56 @@ worksheet.addImage(logoId, {
   private getImageExtension(path: string): 'png' | 'jpeg' {
     return path.toLowerCase().endsWith('.jpg') || path.toLowerCase().endsWith('.jpeg') ? 'jpeg' : 'png';
   }
+
+private applyHeaderBorder(worksheet: ExcelJS.Worksheet) {
+  const clearStartRow = 2;
+  const clearEndRow = 7;
+  const clearStartCol = 1;
+  const clearEndCol = 20;
+
+  const borderStartRow = 2;
+  const borderEndRow = 6;
+  const borderStartCol = 1;
+  const borderEndCol = 16;
+
+  for (let rowNumber = clearStartRow; rowNumber <= clearEndRow; rowNumber++) {
+    const row = worksheet.getRow(rowNumber);
+
+    for (let colNumber = clearStartCol; colNumber <= clearEndCol; colNumber++) {
+      const cell = row.getCell(colNumber);
+
+      cell.border = undefined as any;
+    }
+  }
+
+  for (let colNumber = borderStartCol; colNumber <= borderEndCol; colNumber++) {
+    const topCell = worksheet.getRow(borderStartRow).getCell(colNumber);
+    const bottomCell = worksheet.getRow(borderEndRow).getCell(colNumber);
+
+    topCell.border = {
+      ...topCell.border,
+      top: { style: 'medium' }
+    };
+
+    bottomCell.border = {
+      ...bottomCell.border,
+      bottom: { style: 'medium' }
+    };
+  }
+
+  for (let rowNumber = borderStartRow; rowNumber <= borderEndRow; rowNumber++) {
+    const leftCell = worksheet.getRow(rowNumber).getCell(borderStartCol);
+    const rightCell = worksheet.getRow(rowNumber).getCell(borderEndCol);
+
+    leftCell.border = {
+      ...leftCell.border,
+      left: { style: 'medium' }
+    };
+
+    rightCell.border = {
+      ...rightCell.border,
+      right: { style: 'medium' }
+    };
+  }
+}
 }

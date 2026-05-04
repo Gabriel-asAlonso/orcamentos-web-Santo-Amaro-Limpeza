@@ -12,8 +12,31 @@ export type QuoteItem = {
   discount?: number;
 };
 
+export type CustomerData = {
+  client?: string;
+  fantasyName?: string;
+  address?: string;
+  district?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  document?: string;
+  stateRegistration?: string;
+  region?: string;
+  freight?: string;
+  phone?: string;
+  whatsapp?: string;
+  priceTable?: string;
+  contact?: string;
+  email?: string;
+  salesperson?: string;
+  externalSalesperson?: string;
+};
+
 export type ExcelImportResult = {
   items: QuoteItem[];
+  customerData?: CustomerData;
+  companyId?: string;
   deliveryTime?: string;
   paymentMethod?: string;
 };
@@ -23,6 +46,7 @@ export type Quote = {
   company: Company;
   deliveryTime: string;
   paymentMethod: string;
+  customerData?: CustomerData;
   items: QuoteItem[];
   adjustment: number;
   source: string;

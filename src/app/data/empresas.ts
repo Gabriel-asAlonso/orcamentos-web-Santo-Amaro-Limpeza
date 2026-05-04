@@ -10,50 +10,54 @@ export type Company = {
   email?: string;
   postalCode?: string;
   cnpj?: string;
+  stateRegistration?: string;
+  website?: string;
 };
 
 export const COMPANIES: Company[] = [
   {
     id: 'splash',
-    name: 'SPLASH COMERCIO E SERVIÇO DE PROD.DE LIMPEZA LTDA.ME',
+    name: 'SPLASH COMERCIO E SERVIÇO DE PRODDE LIMPEZA LTDA. ME',
     address: 'Rua Onofre Silveira, 117 - Vila Fachini - CEP 04334-100',
     identity: 'Contato: Ricardo / Andrea - Fone: 3384-5096',
     taxId: '',
-    logoPath: '/logoSantoAmaroLimpeza.jpg',
+    logoPath: '/logoSplash.png',
     contact: 'Ricardo / Andrea',
     phone: '3384-5096',
     email: 'splash@splashconsultoria.com.br',
     postalCode: '04334-100',
-    cnpj: '12.584.220/0001-76'
+    cnpj: '13.054.383/0001-22',
+    stateRegistration: '',
+    website: ''
   },
   {
-    id: 'aurora',
-    name: 'Aurora Eventos Corporativos',
-    address: 'Av. das Nacoes, 420 - Sao Paulo/SP',
-    identity: 'Verde institucional, selo executivo e rodape fiscal',
-    taxId: '12.584.220/0001-76',
-    logoPath: '/logoExemplo.jpeg',
-    contact: 'Ricardo / Andrea',
-    phone: '8888-8888',
-    email: 'splash@splashconsultoria.com.br',
-    postalCode: '04334-100',
-    cnpj: '12.888.888/0001-76'
-
+    id: 'peg-limp',
+    name: 'PEGLIMP - DISTR. DE PRODUTOS DE LIMPEZA',
+    address: 'Rua São Leonardo, 35 - Freguesia do Ó - São Paulo - SP',
+    identity: 'Contato: Antonio Roberto',
+    taxId: '61.621.272/0001-01',
+    logoPath: '/logoPegLimp.png',
+    contact: 'Antonio Roberto',
+    phone: '3991-0045 / 93092-8003',
+    email: 'peglimp@terra.com.br',
+    postalCode: '61.621.272/0001-01',
+    cnpj: '61.621.272/0001-01',
+    stateRegistration: '',
+    website: ''
   },
   {
-    id: 'norte',
-    name: 'Norte Food Service',
-    address: 'Rua Itapua, 88 - Curitiba/PR',
-    identity: 'Marca ambar, cabecalho comercial e assinatura digital',
-    taxId: '08.991.310/0001-44',
-    logoPath: '/logoExemplo2.jpg'
-  },
-  {
-    id: 'delta',
-    name: 'Delta Facilities',
-    address: 'Alameda Central, 1370 - Belo Horizonte/MG',
-    identity: 'Azul tecnico, tabela compacta e dados operacionais',
-    taxId: '31.773.005/0001-20',
-    logoPath: 'assets/logos/delta.png'
+    id: 'grapa-clean',
+    name: 'GRAPACLEAN INSUMOS CORPORATIVOS EIRELI',
+    address: 'Av. Manuel Alves Soares, 199 - Jd. Colonial - São Paulo SP - CEP 04821-270',
+    identity: 'Telefone: (11) 5663-5800 At.: Rafael',
+    taxId: '',
+    logoPath: '/logoGrapaClean.png',
+    contact: 'Rafael',
+    phone: '(11) 5663-5800',
+    email: '',
+    postalCode: '04821-270',
+    cnpj: '33.807.887/0001-83',
+    stateRegistration: '126.188.105.117',
+    website: 'www.grapaclean.com.br'
   }
 ];

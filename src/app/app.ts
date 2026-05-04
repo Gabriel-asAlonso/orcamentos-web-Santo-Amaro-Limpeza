@@ -18,7 +18,7 @@ import {
   UsersRound,
   X
 } from 'lucide-angular';
-import { Quote, QuoteItem } from './model/orcamento.model';
+import { CustomerData, Quote, QuoteItem } from './model/orcamento.model';
 import { ExcelGeneratorService } from './services/excel-generator.service';
 import { COMPANIES, type Company } from './data/empresas';
 
@@ -59,6 +59,7 @@ export class App {
   isImportingExcel = false;
   deliveryTime = '';
   paymentMethod = '';
+  customerData: CustomerData | undefined;
   editingQuoteIndex: number | null = null;
   editingQuoteMode: 'saved' | 'derived-draft' | null = null;
   editingQuote: Quote | null = null;
@@ -197,6 +198,7 @@ export class App {
       company,
       deliveryTime: this.baseQuote.deliveryTime,
       paymentMethod: this.baseQuote.paymentMethod,
+      customerData: this.baseQuote.customerData,
       items: this.previewItems.map(item => ({ ...item })),
       adjustment: this.derivedAdjustment,
       source: 'Derivado do Orçamento A'
@@ -301,6 +303,7 @@ export class App {
         company: this.selectedCompany,
         deliveryTime: this.deliveryTime,
         paymentMethod: this.paymentMethod,
+        customerData: this.customerData,
         items: this.adjustedItems(this.items, this.baseAdjustment),
         adjustment: this.baseAdjustment,
         source
@@ -321,6 +324,7 @@ export class App {
         company,
         deliveryTime: this.baseQuote.deliveryTime,
         paymentMethod: this.baseQuote.paymentMethod,
+        customerData: this.baseQuote.customerData,
         items: this.previewItems.map(item => ({ ...item })),
         adjustment: this.derivedAdjustment,
         source: 'Derivado do Orçamento A'
@@ -365,6 +369,11 @@ export class App {
       }));
 
       this.quotes = [];
+      this.customerData = imported.customerData;
+
+      if (imported.companyId) {
+        this.companyId = imported.companyId;
+      }
 
       if (imported.deliveryTime) {
         this.deliveryTime = imported.deliveryTime;
