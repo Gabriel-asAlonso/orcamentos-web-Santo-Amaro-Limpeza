@@ -80,7 +80,7 @@ export class ExcelGeneratorService {
     worksheet.getCell('C17').alignment = { horizontal: 'center', vertical: 'middle', wrapText: false };
     this.applyDeliveryTimeHeader(worksheet, quote.deliveryTime);
 
-    this.fillProducts(worksheet, quote.items);
+    this.fillProducts(worksheet, quote.items, quote.deliveryTime);
 
     const arquivo = await workbook.xlsx.writeBuffer();
 
@@ -90,7 +90,7 @@ export class ExcelGeneratorService {
     );
   }
 
-  private fillProducts(worksheet: ExcelJS.Worksheet, items: QuoteItem[]) {
+  private fillProducts(worksheet: ExcelJS.Worksheet, items: QuoteItem[], deliveryTime: string) {
     const linhaInicial = 19;
     const linhaTotalOriginal = this.findTotalProductsRow(worksheet) ?? 25;
     const quantidadeProdutos = items.length;
