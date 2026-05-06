@@ -1,0 +1,225 @@
+<main class="relative min-h-screen overflow-hidden bg-background">
+  <div class="pointer-events-none absolute inset-0">
+    <div class="absolute -top-40 -left-32 h-96 w-96 rounded-full bg-primary/15 blur-3xl"></div>
+    <div class="absolute -bottom-40 -right-32 h-[28rem] w-[28rem] rounded-full bg-accent/15 blur-3xl"></div>
+    <div class="absolute inset-0 bg-[radial-gradient(circle_at_top,_color-mix(in_oklab,_var(--color-primary)_8%,_transparent)_0%,_transparent_55%)]"></div>
+  </div>
+
+  <div class="relative mx-auto grid min-h-screen max-w-7xl grid-cols-1 lg:grid-cols-[1.05fr_1fr]">
+    <aside class="hidden flex-col justify-between p-12 lg:flex">
+      <a routerLink="/" class="flex items-center gap-3">
+        <span class="overflow-hidden rounded-xl border border-border/60 bg-card p-1 shadow-sm">
+          <img [src]="logoUrl" alt="Logo" class="h-10 w-10 rounded-lg object-cover" />
+        </span>
+
+        <span class="text-sm font-semibold tracking-wide text-foreground">
+          Central de Orçamentos
+        </span>
+      </a>
+
+      <div class="space-y-6">
+        <span class="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium uppercase tracking-wider text-primary">
+          <lucide-angular [img]="ShieldCheck" class="h-3.5 w-3.5"></lucide-angular>
+          Acesso seguro
+        </span>
+
+        <h1 class="text-4xl font-semibold leading-tight tracking-tight text-foreground">
+          Bem-vindo de volta.
+          <br />
+          <span class="text-muted-foreground">
+            Gere orçamentos com precisão e estilo.
+          </span>
+        </h1>
+
+        <p class="max-w-md text-sm leading-relaxed text-muted-foreground">
+          Crie orçamentos base, derive versões por empresa com ajuste percentual e exporte
+          tudo em segundos — em um único fluxo enxuto.
+        </p>
+
+        <ul class="space-y-3 text-sm text-muted-foreground">
+          <li class="flex items-center gap-3">
+            <span class="grid h-6 w-6 place-content-center rounded-full bg-primary/10 text-primary">
+              <lucide-angular [img]="ArrowRight" class="h-3.5 w-3.5"></lucide-angular>
+            </span>
+            Importação direta de planilhas Excel
+          </li>
+
+          <li class="flex items-center gap-3">
+            <span class="grid h-6 w-6 place-content-center rounded-full bg-primary/10 text-primary">
+              <lucide-angular [img]="ArrowRight" class="h-3.5 w-3.5"></lucide-angular>
+            </span>
+            Versões derivadas com ajuste percentual
+          </li>
+
+          <li class="flex items-center gap-3">
+            <span class="grid h-6 w-6 place-content-center rounded-full bg-primary/10 text-primary">
+              <lucide-angular [img]="ArrowRight" class="h-3.5 w-3.5"></lucide-angular>
+            </span>
+            Exportação imediata por empresa
+          </li>
+        </ul>
+      </div>
+
+      <p class="text-xs text-muted-foreground">
+        © {{ currentYear }} Central de Orçamentos · Todos os direitos reservados
+      </p>
+    </aside>
+
+    <section class="flex items-center justify-center p-6 sm:p-10">
+      <div class="w-full max-w-md">
+        <a routerLink="/" class="mb-8 flex items-center gap-3 lg:hidden">
+          <span class="overflow-hidden rounded-xl border border-border/60 bg-card p-1 shadow-sm">
+            <img [src]="logoUrl" alt="Logo" class="h-9 w-9 rounded-lg object-cover" />
+          </span>
+
+          <span class="text-sm font-semibold tracking-wide text-foreground">
+            Central de Orçamentos
+          </span>
+        </a>
+
+        <div class="rounded-2xl border border-border/60 bg-card/80 p-8 shadow-xl backdrop-blur-sm">
+          <header class="mb-7 space-y-1.5">
+            <h2 class="text-2xl font-semibold tracking-tight text-foreground">
+              Entrar na sua conta
+            </h2>
+
+            <p class="text-sm text-muted-foreground">
+              Informe seu email e senha para continuar.
+            </p>
+          </header>
+
+          <form class="space-y-5" (ngSubmit)="handleSubmit()">
+            <p
+              *ngIf="errorMessage"
+              class="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+              role="alert"
+            >
+              {{ errorMessage }}
+            </p>
+
+            <div class="space-y-2">
+              <label for="email" class="text-sm font-medium leading-none text-foreground">
+                Email
+              </label>
+
+              <div class="relative">
+                <lucide-angular
+                  [img]="Mail"
+                  class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                ></lucide-angular>
+
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autocomplete="email"
+                  required
+                  [(ngModel)]="email"
+                  placeholder="voce@empresa.com"
+                  [disabled]="loading"
+                  class="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 pl-12 text-sm text-foreground shadow-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                />
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <label for="password" class="text-sm font-medium leading-none text-foreground">
+                  Senha
+                </label>
+
+                <button
+                  type="button"
+                  class="text-xs font-medium text-primary hover:underline"
+                >
+                  Esqueceu a senha?
+                </button>
+              </div>
+
+              <div class="relative">
+                <lucide-angular
+                  [img]="Lock"
+                  class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                ></lucide-angular>
+
+                <input
+                  id="password"
+                  name="password"
+                  [type]="showPassword ? 'text' : 'password'"
+                  autocomplete="current-password"
+                  required
+                  [(ngModel)]="password"
+                  placeholder="••••••••"
+                  [disabled]="loading"
+                  class="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 pl-12 pr-10 text-sm text-foreground shadow-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                />
+
+                <button
+                  type="button"
+                  (click)="togglePassword()"
+                  class="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-content-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  [attr.aria-label]="showPassword ? 'Ocultar senha' : 'Mostrar senha'"
+                >
+                  <lucide-angular
+                    *ngIf="showPassword; else eyeIcon"
+                    [img]="EyeOff"
+                    class="h-4 w-4"
+                  ></lucide-angular>
+
+                  <ng-template #eyeIcon>
+                    <lucide-angular [img]="Eye" class="h-4 w-4"></lucide-angular>
+                  </ng-template>
+                </button>
+              </div>
+            </div>
+
+            <label class="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
+              <input
+                type="checkbox"
+                name="remember"
+                [(ngModel)]="remember"
+                class="h-4 w-4 rounded border border-input accent-primary"
+              />
+
+              Manter-me conectado
+            </label>
+
+            <button
+              type="submit"
+              [disabled]="loading"
+              class="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-primary px-8 text-sm font-medium text-primary-foreground shadow-command transition-all hover:-translate-y-0.5 hover:bg-primary/95 active:translate-y-0 disabled:pointer-events-none disabled:opacity-50"
+            >
+              {{ loading ? 'Entrando...' : 'Entrar' }}
+
+              <lucide-angular
+                *ngIf="!loading"
+                [img]="ArrowRight"
+                class="h-4 w-4"
+              ></lucide-angular>
+            </button>
+          </form>
+
+          <p class="mt-6 text-center text-sm text-muted-foreground">
+            Ainda não tem conta?
+
+            <button class="font-medium text-primary hover:underline">
+              Solicitar acesso
+            </button>
+          </p>
+        </div>
+
+        <p class="mt-6 text-center text-xs text-muted-foreground">
+          Ao entrar, você concorda com nossos
+
+          <span class="underline-offset-2 hover:underline">Termos</span>
+
+          e
+
+          <span class="underline-offset-2 hover:underline">
+            Política de Privacidade
+          </span>.
+        </p>
+      </div>
+    </section>
+  </div>
+</main>

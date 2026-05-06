@@ -1,0 +1,18 @@
+[
+  {
+    "id": "8740c0de-ab12-4d23-9fec-69cc231a8944",
+    "name": "Administrador",
+    "email": "admin@empresa.com",
+    "passwordHash": "$2b$10$5.ITh6n7ND0EdDxt.SbopeOYfjTMoLpQa79hh9P9O67eWyQHfRluW",
+    "active": true,
+    "createdAt": "2026-05-05T01:34:50.519Z"
+  },
+  {
+    "id": "3141db96-4ce7-41db-b101-64a643509700",
+    "name": "teste",
+    "email": "admin",
+    "passwordHash": "$2b$10$2VtzHsU4HcWDcKMo2xZLW.LXxen.hzOl0ylxSUKk9B3ceYeLvlmme",
+    "active": true,
+    "createdAt": "2026-05-05T01:42:04.459Z"
+  }
+]
