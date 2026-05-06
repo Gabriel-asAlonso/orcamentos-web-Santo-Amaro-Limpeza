@@ -29,11 +29,12 @@ export class ExcelGeneratorService {
       throw new Error('Aba da planilha não encontrada');
     }
 
-   this.prepareWorksheetColumns(worksheet);
-this.clearWorksheetImages(worksheet);
+    this.prepareWorksheetColumns(worksheet);
+    this.clearWorksheetImages(worksheet);
+    this.clearWorksheetRowGrouping(worksheet);
 
-await this.insertHeaderBorder(workbook, worksheet);
-await this.insertCompanyLogo(workbook, worksheet, quote.company.logoPath);
+    await this.insertHeaderBorder(workbook, worksheet);
+    await this.insertCompanyLogo(workbook, worksheet, quote.company.logoPath);
 
     const companyDocument = quote.company.cnpj || quote.company.taxId || '';
     const customer = quote.customerData;
@@ -64,15 +65,22 @@ await this.insertCompanyLogo(workbook, worksheet, quote.company.logoPath);
     worksheet.getCell('C12').value = customer?.freight ?? '';
     worksheet.getCell('L12').value = 'Forma Pagto. :';
     worksheet.getCell('N12').value = quote.paymentMethod;
+    worksheet.getCell('L12').font = { bold: false, size: 10 };
+    worksheet.getCell('N12').font = { bold: false, size: 10 };
     worksheet.getCell('C13').value = customer?.phone ?? '';
     worksheet.getCell('H13').value = customer?.whatsapp ?? '';
+    worksheet.getCell('E13').font = { bold: false, size: 10 };
+    worksheet.getCell('H13').font = { bold: false, size: 10 };
     worksheet.getCell('N13').value = customer?.priceTable ?? '';
     worksheet.getCell('C14').value = customer?.contact ?? '';
     worksheet.getCell('C15').value = customer?.email ?? '';
     worksheet.getCell('C16').value = customer?.salesperson ?? '';
     worksheet.getCell('C17').value = customer?.externalSalesperson ?? '';
+    worksheet.getCell('C17').font = { bold: true, size: 10 };
+    worksheet.getCell('C17').alignment = { horizontal: 'center', vertical: 'middle', wrapText: false };
+    this.applyDeliveryTimeHeader(worksheet, quote.deliveryTime);
 
-    this.fillProducts(worksheet, quote.items, quote.deliveryTime);
+    this.fillProducts(worksheet, quote.items);
 
     const arquivo = await workbook.xlsx.writeBuffer();
 
@@ -82,7 +90,7 @@ await this.insertCompanyLogo(workbook, worksheet, quote.company.logoPath);
     );
   }
 
-  private fillProducts(worksheet: ExcelJS.Worksheet, items: QuoteItem[], deliveryTime: string) {
+  private fillProducts(worksheet: ExcelJS.Worksheet, items: QuoteItem[]) {
     const linhaInicial = 19;
     const linhaTotalOriginal = this.findTotalProductsRow(worksheet) ?? 25;
     const quantidadeProdutos = items.length;
@@ -125,6 +133,7 @@ await this.insertCompanyLogo(workbook, worksheet, quote.company.logoPath);
       const totalProduto = subtotal - subtotal * (discount / 100);
 
       linha.height = alturaProduto;
+      this.showRowWithoutGrouping(linha);
 
       for (let colNumber = 1; colNumber <= 16; colNumber++) {
         const cell = linha.getCell(colNumber);
@@ -173,8 +182,7 @@ await this.insertCompanyLogo(workbook, worksheet, quote.company.logoPath);
     const totalRow = worksheet.getRow(linhaTotal);
 
     totalRow.height = alturaTotal;
-    totalRow.hidden = false;
-    totalRow.outlineLevel = 0;
+    this.showRowWithoutGrouping(totalRow);
 
     for (let colNumber = 1; colNumber <= 16; colNumber++) {
       const cell = totalRow.getCell(colNumber);
@@ -207,12 +215,9 @@ await this.insertCompanyLogo(workbook, worksheet, quote.company.logoPath);
 
     totalRow.commit();
 
-    const lastVisibleRow = deliveryTime ? linhaTotal + 1 : linhaTotal;
+    const lastVisibleRow = linhaTotal;
 
-    if (deliveryTime) {
-      this.applyDeliveryTimeRow(worksheet, lastVisibleRow, deliveryTime);
-    }
-
+    this.clearWorksheetRowGrouping(worksheet, linhaInicial, lastVisibleRow);
     this.removeRowsAfterTotal(worksheet, lastVisibleRow);
   }
 
@@ -257,6 +262,8 @@ await this.insertCompanyLogo(workbook, worksheet, quote.company.logoPath);
         showGridLines: false
       }
     ];
+
+    worksheet.properties.outlineLevelRow = 0;
   }
 
   private applyProductRowLayout(worksheet: ExcelJS.Worksheet, rowNumber: number) {
@@ -315,40 +322,50 @@ await this.insertCompanyLogo(workbook, worksheet, quote.company.logoPath);
     }
   }
 
-  private applyDeliveryTimeRow(worksheet: ExcelJS.Worksheet, rowNumber: number, deliveryTime: string) {
-    this.safeMergeCells(worksheet, `D${rowNumber}:P${rowNumber}`);
+  private applyDeliveryTimeHeader(worksheet: ExcelJS.Worksheet, deliveryTime: string) {
+    this.safeMergeCells(worksheet, 'L17:M17');
+    this.safeMergeCells(worksheet, 'N17:P17');
 
-    const row = worksheet.getRow(rowNumber);
-    const labelCell = row.getCell(1);
-    const cell = row.getCell(4);
+    const labelCell = worksheet.getCell('L17');
+    const valueCell = worksheet.getCell('N17');
 
-    row.height = 22;
+    labelCell.value = 'Prazo de Entrega:';
+    valueCell.value = deliveryTime;
+
+    labelCell.font = { bold: false, size: 10 };
+    valueCell.font = { bold: false, size: 10 };
+
+    labelCell.alignment = { horizontal: 'right', vertical: 'middle', wrapText: false };
+    valueCell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: false };
+
+    for (let colNumber = 12; colNumber <= 16; colNumber++) {
+      const cell = worksheet.getRow(17).getCell(colNumber);
+
+      cell.border = undefined as any;
+      cell.fill = undefined as any;
+    }
+  }
+
+  private clearWorksheetRowGrouping(
+    worksheet: ExcelJS.Worksheet,
+    startRow = 1,
+    endRow = worksheet.rowCount
+  ) {
+    worksheet.properties.outlineLevelRow = 0;
+
+    for (let rowNumber = startRow; rowNumber <= endRow; rowNumber++) {
+      this.showRowWithoutGrouping(worksheet.getRow(rowNumber));
+    }
+  }
+
+  private showRowWithoutGrouping(row: ExcelJS.Row) {
     row.hidden = false;
     row.outlineLevel = 0;
-    labelCell.value = 'Prazo de Entrega:';
-    cell.value = deliveryTime;
-    labelCell.font = { bold: true, size: 10 };
-    cell.font = { bold: true, size: 10 };
-    labelCell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: false };
-    cell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: false };
-    labelCell.border = {
-      top: { style: 'thin' }
-    };
-    cell.border = {
-      top: { style: 'thin' }
-    };
 
-    for (let colNumber = 2; colNumber <= 16; colNumber++) {
-      const rowCell = row.getCell(colNumber);
-
-      if (colNumber === 4) continue;
-
-      rowCell.value = null;
-      rowCell.border = undefined as any;
-      rowCell.fill = undefined as any;
-    }
-
-    row.commit();
+    const rowModel = row.model as ExcelJS.RowModel & { collapsed?: boolean };
+    rowModel.hidden = false;
+    rowModel.outlineLevel = 0;
+    rowModel.collapsed = false;
   }
 
   private findTotalProductsRow(worksheet: ExcelJS.Worksheet) {

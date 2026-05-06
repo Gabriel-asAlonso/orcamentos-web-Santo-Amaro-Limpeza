@@ -15,7 +15,7 @@ export type Company = {
 };
 
 export const COMPANIES: Company[] = [
-  {
+{
     id: 'splash',
     name: 'SPLASH COMERCIO E SERVIÇO DE PRODDE LIMPEZA LTDA. ME',
     address: 'Rua Onofre Silveira, 117 - Vila Fachini - CEP 04334-100',
@@ -27,6 +27,21 @@ export const COMPANIES: Company[] = [
     email: 'splash@splashconsultoria.com.br',
     postalCode: '04334-100',
     cnpj: '13.054.383/0001-22',
+    stateRegistration: '',
+    website: ''
+  },
+     {
+    id: 'Laguna',
+    name: 'Laguna Comércio de Produtos de Limpeza Ltda',
+    address: 'Av. João Carlos da Silva Borges, 838 - sobreloja - Vila Cruzeiro - São Paulo - SP - 04726-001',
+    identity: 'Contato: Ana Paula - 5641-8332',
+    taxId: '',
+    logoPath: '/logoLaguna.png',
+    contact: 'Ana Paula',
+    phone: '5641-8332 / 95570-0222 ',
+    email: 'financeiro1@lagunalimpeza.com.br',
+    postalCode: '04726-001',
+    cnpj: '57.566.292/0001-41',
     stateRegistration: '',
     website: ''
   },
