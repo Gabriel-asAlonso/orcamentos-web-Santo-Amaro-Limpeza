@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 import { Login } from './login/login';
-import { Orcamentos } from './pages/orcamentos/orcamentos';
+import { orcamentos } from './pages/orcamentos/orcamentos';
 
 export const routes: Routes = [
   {
@@ -14,7 +14,7 @@ export const routes: Routes = [
   },
   {
     path: 'orcamentos',
-    component: Orcamentos
+    component: orcamentos
   },
   {
     path: '**',

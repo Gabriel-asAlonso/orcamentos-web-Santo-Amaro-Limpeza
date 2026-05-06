@@ -3,7 +3,12 @@ const withOpacity = (variable) => ({ opacityValue }) => {
     return `var(${variable})`;
   }
 
-  return `color-mix(in oklab, var(${variable}) ${Number(opacityValue) * 100}%, transparent)`;
+  const opacity = Number(opacityValue);
+  const percentage = Number.isNaN(opacity)
+    ? `calc(${opacityValue} * 100%)`
+    : `${opacity * 100}%`;
+
+  return `color-mix(in oklab, var(${variable}) ${percentage}, transparent)`;
 };
 
 module.exports = {
