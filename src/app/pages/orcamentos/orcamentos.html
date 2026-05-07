@@ -70,7 +70,7 @@
             ? 'mb-5 flex cursor-wait flex-col items-center justify-center rounded-lg border border-dashed bg-secondary p-6 text-center opacity-75'
             : 'mb-5 flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed bg-secondary p-6 text-center transition hover:-translate-y-0.5 hover:bg-secondary/80'"
         >
-          <lucide-angular [img]="FileSpreadsheet" class="mb-3 size-8 text-primary"></lucide-angular>
+          <lucide-angular [img]="icons.FileSpreadsheet" class="mb-3 size-8 text-primary"></lucide-angular>
 
           <span class="font-semibold">{{ isImportingExcel ? 'Importando planilha...' : 'Importar planilha preenchida' }}</span>
           <span class="mt-1 text-sm text-muted-foreground">{{ excelStatus }}</span>
@@ -178,7 +178,7 @@
                 [disabled]="isImportedBaseLocked"
                 (click)="removeItem(item.id)"
               >
-                <lucide-angular [img]="Trash2" class="mx-auto size-4"></lucide-angular>
+                <lucide-angular [img]="icons.Trash2" class="mx-auto size-4"></lucide-angular>
               </button>
             </div>
           </div>
@@ -190,7 +190,7 @@
             [disabled]="isImportedBaseLocked"
             (click)="addItem()"
           >
-            <lucide-angular [img]="Plus" class="size-4"></lucide-angular>
+            <lucide-angular [img]="icons.Plus" class="size-4"></lucide-angular>
             Adicionar produto
           </button>
 
@@ -198,13 +198,13 @@
             class="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-command transition-colors hover:bg-primary/90"
             (click)="generateBaseQuote(mode === 'manual' ? 'Manual' : 'Excel')"
           >
-            <lucide-angular [img]="FileText" class="size-4"></lucide-angular>
+            <lucide-angular [img]="icons.FileText" class="size-4"></lucide-angular>
             Gerar Orçamento A
           </button>
         </div>
       </section>
 
-      <section class="h-full rounded-lg border bg-card p-4 shadow-panel sm:p-6">
+      <section class="flex h-full min-h-0 flex-col rounded-lg border bg-card p-4 shadow-panel sm:p-6">
         <div class="mb-5 flex items-center justify-between gap-4">
           <div>
             <h2 class="text-3xl font-semibold">Derivar novos orçamentos</h2>
@@ -213,7 +213,7 @@
             </p>
           </div>
 
-          <lucide-angular [img]="Building2" class="size-9 text-primary"></lucide-angular>
+          <lucide-angular [img]="icons.Building2" class="size-9 text-primary"></lucide-angular>
         </div>
 
         <label class="block">
@@ -239,7 +239,7 @@
               class="inline-flex size-10 items-center justify-center rounded-md border border-input bg-background text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
               (click)="setDerivedAdjustment(derivedAdjustment - 1)"
             >
-              <lucide-angular [img]="ArrowDown" class="size-4"></lucide-angular>
+              <lucide-angular [img]="icons.ArrowDown" class="size-4"></lucide-angular>
             </button>
 
             <input
@@ -253,7 +253,7 @@
               class="inline-flex size-10 items-center justify-center rounded-md border border-input bg-background text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
               (click)="setDerivedAdjustment(derivedAdjustment + 1)"
             >
-              <lucide-angular [img]="ArrowUp" class="size-4"></lucide-angular>
+              <lucide-angular [img]="icons.ArrowUp" class="size-4"></lucide-angular>
             </button>
           </div>
 
@@ -262,7 +262,7 @@
           </p>
         </div>
 
-        <div class="quote-paper mt-5 rounded-lg border bg-quote p-4 text-quote-foreground">
+        <div class="quote-paper mt-5 flex min-h-0 min-w-0 flex-1 flex-col rounded-lg border bg-quote p-4 text-quote-foreground">
           <div class="mb-3 flex items-center justify-between">
             <strong>{{ baseQuote ? nextLabel : 'Prévia bloqueada' }}</strong>
 
@@ -273,11 +273,18 @@
 
           <ng-container *ngIf="baseQuote; else lockedPreview">
             <div
-              *ngFor="let item of previewItems; trackBy: trackItemById"
-              class="grid grid-cols-[1fr_auto] gap-3 border-t py-2 text-sm"
+              data-slot="scroll-area"
+              class="derived-product-scroll-area min-h-0 flex-1 overflow-y-auto pr-1"
             >
-              <span>{{ item.quantity }}× {{ item.product }}</span>
-              <strong>{{ currency(item.quantity * item.unitPrice) }}</strong>
+              <div
+                *ngFor="let item of previewItems; trackBy: trackItemById"
+                class="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-3 border-t py-2 text-sm"
+              >
+                <span class="min-w-0 truncate" [title]="item.quantity + 'x ' + item.product">
+                  {{ item.quantity }}× {{ item.product }}
+                </span>
+                <strong class="shrink-0">{{ currency(item.quantity * item.unitPrice) }}</strong>
+              </div>
             </div>
           </ng-container>
 
@@ -330,7 +337,7 @@
           type="button"
           (click)="downloadComparativeQuotes()"
         >
-          <lucide-angular [img]="UsersRound" class="size-4"></lucide-angular>
+          <lucide-angular [img]="icons.UsersRound" class="size-4"></lucide-angular>
           Comparar Orçamentos
         </button>
       </div>
@@ -379,14 +386,14 @@
             </p>
 
             <p class="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <lucide-angular [img]="Building2" class="size-3.5 shrink-0"></lucide-angular>
+              <lucide-angular [img]="icons.Building2" class="size-3.5 shrink-0"></lucide-angular>
               <span class="truncate">{{ quote.company.address }}</span>
             </p>
           </div>
 
           <div class="relative z-10 mt-4 flex items-center gap-4 border-t border-border/60 pt-4 text-xs text-muted-foreground">
             <span class="inline-flex items-center gap-1.5">
-              <lucide-angular [img]="FileText" class="size-3.5"></lucide-angular>
+              <lucide-angular [img]="icons.FileText" class="size-3.5"></lucide-angular>
               {{ quote.items.length }} {{ quote.items.length === 1 ? 'item' : 'itens' }}
             </span>
 
@@ -415,7 +422,7 @@
                 [attr.aria-label]="'Apagar ' + quote.label"
                 (click)="deleteQuote(quoteIndex)"
               >
-                <lucide-angular [img]="Trash2" class="size-3.5"></lucide-angular>
+                <lucide-angular [img]="icons.Trash2" class="size-3.5"></lucide-angular>
               </button>
 
               <button
@@ -425,7 +432,7 @@
                 [disabled]="isImportedBaseQuoteIndex(quoteIndex)"
                 (click)="openEditQuote(quoteIndex)"
               >
-                <lucide-angular [img]="Pencil" class="size-3.5"></lucide-angular>
+                <lucide-angular [img]="icons.Pencil" class="size-3.5"></lucide-angular>
                 Editar
               </button>
 
@@ -434,7 +441,7 @@
                 [attr.aria-label]="'Baixar ' + quote.label"
                 (click)="downloadQuote(quote)"
               >
-                <lucide-angular [img]="Download" class="size-3.5"></lucide-angular>
+                <lucide-angular [img]="icons.Download" class="size-3.5"></lucide-angular>
                 Baixar
               </button>
             </div>
@@ -445,7 +452,7 @@
           *ngIf="!quotes.length"
           class="rounded-xl border border-dashed border-border bg-secondary/40 p-10 text-center text-sm text-muted-foreground md:col-span-2 xl:col-span-3"
         >
-          <lucide-angular [img]="FileText" class="mx-auto mb-3 size-8 text-muted-foreground/50"></lucide-angular>
+          <lucide-angular [img]="icons.FileText" class="mx-auto mb-3 size-8 text-muted-foreground/50"></lucide-angular>
           Nenhum orçamento gerado ainda. Comece criando o Orçamento A acima.
         </div>
       </div>
@@ -478,7 +485,7 @@
           aria-label="Fechar edição"
           (click)="closeEditQuote()"
         >
-          <lucide-angular [img]="X" class="size-4"></lucide-angular>
+          <lucide-angular [img]="icons.X" class="size-4"></lucide-angular>
         </button>
       </div>
 
@@ -529,7 +536,7 @@
               aria-label="Remover produto"
               (click)="removeEditingItem(item.id)"
             >
-              <lucide-angular [img]="Trash2" class="mx-auto size-4"></lucide-angular>
+              <lucide-angular [img]="icons.Trash2" class="mx-auto size-4"></lucide-angular>
             </button>
           </div>
         </div>
@@ -570,7 +577,7 @@
             type="button"
             (click)="addEditingItem()"
           >
-            <lucide-angular [img]="Plus" class="size-4"></lucide-angular>
+            <lucide-angular [img]="icons.Plus" class="size-4"></lucide-angular>
             Adicionar produto
           </button>
 
@@ -579,7 +586,7 @@
             type="button"
             (click)="saveEditingQuote()"
           >
-            <lucide-angular [img]="Check" class="size-4"></lucide-angular>
+            <lucide-angular [img]="icons.Check" class="size-4"></lucide-angular>
             Concluir
           </button>
         </div>

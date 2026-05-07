@@ -252,7 +252,7 @@ export class ExcelComparativoService {
       this.aplicarEstiloLinhaResumo(worksheet.getRow(rowIndex), layout.lastSupplierColumn);
     }
 
-    worksheet.getRow(layout.deliveryRow).height = 46;
+    worksheet.getRow(layout.deliveryRow).height = 54;
   }
 
   private recriarMesclagens(worksheet: ExcelJS.Worksheet, layout: ComparativeLayout): void {

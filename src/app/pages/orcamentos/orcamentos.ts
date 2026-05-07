@@ -1,5 +1,4 @@
 import { ChangeDetectorRef, Component, inject } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ExcelImporterService } from '../../services/excel-importer.service';
 import { FormsModule } from '@angular/forms';
@@ -23,32 +22,67 @@ import { ExcelComparativoService, type ComparativeQuote } from '../../services/e
 import { ExcelGeneratorService } from '../../services/excel-generator.service';
 import { COMPANIES, type Company } from '../../data/empresas';
 
+const INITIAL_ITEMS: QuoteItem[] = [
+  {
+    id: 1,
+    code: '1',
+    reference: '',
+    product: 'Copo térmico personalizado',
+    quantity: 120,
+    unit: 'peça',
+    unitPrice: 10,
+    discount: 0
+  },
+  {
+    id: 2,
+    code: '2',
+    reference: '',
+    product: 'Kit boas-vindas premium',
+    quantity: 40,
+    unit: 'kit',
+    unitPrice: 86.5,
+    discount: 0
+  }
+];
+
+const sumItems = (total: number, item: QuoteItem) => {
+  const discount = item.discount ?? 0;
+  const subtotal = item.quantity * item.unitPrice;
+  const totalWithDiscount = subtotal - subtotal * (discount / 100);
+
+  return total + totalWithDiscount;
+};
+
+const getQuoteLabel = (index: number) => `Orçamento ${String.fromCharCode(65 + index)}`;
+
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, CommonModule, FormsModule, LucideAngularModule],
+  imports: [CommonModule, FormsModule, LucideAngularModule],
   templateUrl: './orcamentos.html',
   styleUrl: './orcamentos.scss'
 })
-export class orcamentos {
+export class Orcamentos {
   private excelComparativo = inject(ExcelComparativoService);
   private excelGenerator = inject(ExcelGeneratorService);
   private excelImporter = inject(ExcelImporterService);
   private changeDetector = inject(ChangeDetectorRef);
   private readonly importedBaseCompanyId = 'Laguna';
 
-  ArrowDown = ArrowDown;
-  ArrowUp = ArrowUp;
-  Building2 = Building2;
-  Check = Check;
-  Download = Download;
-  FileSpreadsheet = FileSpreadsheet;
-  FileText = FileText;
-  Pencil = Pencil;
-  Plus = Plus;
-  Trash2 = Trash2;
-  UsersRound = UsersRound;
-  X = X;
+  readonly icons = {
+    ArrowDown,
+    ArrowUp,
+    Building2,
+    Check,
+    Download,
+    FileSpreadsheet,
+    FileText,
+    Pencil,
+    Plus,
+    Trash2,
+    UsersRound,
+    X
+  };
 
   companies: Company[] = COMPANIES;
 
@@ -66,29 +100,9 @@ export class orcamentos {
   customerData: CustomerData | undefined;
   editingQuoteIndex: number | null = null;
   editingQuote: Quote | null = null;
+  errorMessage = '';
 
-  items: QuoteItem[] = [
-    {
-      id: 1,
-      code: '1',
-      reference: '',
-      product: 'Copo térmico personalizado',
-      quantity: 120,
-      unit: 'peça',
-      unitPrice: 10,
-      discount: 0
-    },
-    {
-      id: 2,
-      code: '2',
-      reference: '',
-      product: 'Kit boas-vindas premium',
-      quantity: 40,
-      unit: 'kit',
-      unitPrice: 86.5,
-      discount: 0
-    }
-  ];
+  items: QuoteItem[] = [...INITIAL_ITEMS];
 
   get selectedCompany() {
     if (this.isImportedBaseLocked) {
@@ -109,19 +123,19 @@ export class orcamentos {
   }
 
   get nextLabel() {
-    return `Orçamento ${String.fromCharCode(65 + this.quotes.length)}`;
+    return getQuoteLabel(this.quotes.length);
   }
 
   get currentTotal() {
-    return this.adjustedItems(this.items, this.baseAdjustment).reduce(this.sumItems, 0);
+    return this.adjustedItems(this.items, this.baseAdjustment).reduce(sumItems, 0);
   }
 
   get previewTotal() {
-    return this.previewItems.reduce(this.sumItems, 0);
+    return this.previewItems.reduce(sumItems, 0);
   }
 
   get editingTotal() {
-    return this.editingQuote?.items.reduce(this.sumItems, 0) ?? 0;
+    return this.editingQuote?.items.reduce(sumItems, 0) ?? 0;
   }
 
   currency(value: number) {
@@ -146,14 +160,6 @@ export class orcamentos {
           }
         : item
     );
-  }
-
-  sumItems(total: number, item: QuoteItem) {
-    const discount = item.discount ?? 0;
-    const subtotal = item.quantity * item.unitPrice;
-    const totalWithDiscount = subtotal - subtotal * (discount / 100);
-
-    return total + totalWithDiscount;
   }
 
   addItem() {
@@ -285,38 +291,21 @@ export class orcamentos {
   }
 
   saveEditingQuote() {
-    if (!this.editingQuote) return;
+    if (!this.editingQuote || this.editingQuoteIndex === null) return;
 
     const editedItems = this.editingQuote.items.map(item => ({ ...item }));
     const editedAdjustment = this.editingQuote.adjustment;
 
-    if (this.editingQuoteIndex === null) return;
-
     if (this.editingQuoteIndex === 0) {
-      this.quotes = this.quotes.map((quote, index) => ({
-        ...quote,
-        adjustment: index === 0 ? editedAdjustment : quote.adjustment,
-        items: index === 0 ? editedItems : this.adjustedItems(editedItems, quote.adjustment)
-      }));
-
-      this.closeEditQuote();
-      return;
+      this.saveBaseQuote(editedItems, editedAdjustment);
+    } else {
+      this.saveRegularQuote(this.editingQuoteIndex, editedItems, editedAdjustment);
     }
-
-    this.quotes = this.quotes.map((quote, index) =>
-      index === this.editingQuoteIndex
-        ? {
-            ...quote,
-            adjustment: editedAdjustment,
-            items: editedItems
-          }
-        : quote
-    );
 
     this.closeEditQuote();
   }
 
-  trackItemById(index: number, item: QuoteItem) {
+  trackItemById(_index: number, item: QuoteItem) {
     return item.id;
   }
 
@@ -331,7 +320,7 @@ export class orcamentos {
 
     this.quotes = [
       {
-        label: 'Orçamento A',
+        label: getQuoteLabel(0),
         company: this.selectedCompany,
         deliveryTime: this.deliveryTime,
         paymentMethod: this.paymentMethod,
@@ -374,7 +363,7 @@ export class orcamentos {
       .filter((_, quoteIndex) => quoteIndex !== index)
       .map((quote, quoteIndex) => ({
         ...quote,
-        label: `Orçamento ${String.fromCharCode(65 + quoteIndex)}`
+        label: getQuoteLabel(quoteIndex)
       }));
   }
 
@@ -384,6 +373,7 @@ export class orcamentos {
 
     if (!file) return;
 
+    this.errorMessage = '';
     this.isImportingExcel = true;
     this.excelStatus = `Importando ${file.name}...`;
     this.changeDetector.markForCheck();
@@ -414,7 +404,7 @@ export class orcamentos {
 
       this.excelStatus = `${this.items.length} produto(s) importado(s) de ${file.name}.`;
     } catch (error) {
-      alert(error instanceof Error ? error.message : 'Erro ao importar planilha.');
+      this.setErrorFeedback(error, 'Erro ao importar planilha.');
       this.excelStatus = 'Não foi possível importar a planilha. Confira as colunas e tente novamente.';
     } finally {
       this.isImportingExcel = false;
@@ -424,6 +414,8 @@ export class orcamentos {
   }
 
   async downloadQuote(quote: Quote) {
+    this.errorMessage = '';
+
     try {
       await this.excelGenerator.generateQuoteExcel({
         ...quote,
@@ -431,12 +423,15 @@ export class orcamentos {
         paymentMethod: quote.paymentMethod || this.paymentMethod
       });
     } catch (error) {
+      this.setErrorFeedback(error, 'Erro ao gerar Excel.');
       console.error('Erro ao gerar Excel:', error);
     }
   }
 
   async downloadComparativeQuotes() {
     if (this.quotes.length < 2) return;
+
+    this.errorMessage = '';
 
     const comparativeQuotes = this.quotes.map<ComparativeQuote>(quote => ({
       label: quote.label,
@@ -457,9 +452,29 @@ export class orcamentos {
     try {
       await this.excelComparativo.gerarPlanilhaComparativa(comparativeQuotes);
     } catch (error) {
+      this.setErrorFeedback(error, 'Erro ao gerar planilha comparativa.');
       console.error('Erro ao gerar planilha comparativa:', error);
-      alert(error instanceof Error ? error.message : 'Erro ao gerar planilha comparativa.');
     }
+  }
+
+  private saveBaseQuote(editedItems: QuoteItem[], editedAdjustment: number) {
+    this.quotes = this.quotes.map((quote, index) => ({
+      ...quote,
+      adjustment: index === 0 ? editedAdjustment : quote.adjustment,
+      items: index === 0 ? editedItems : this.adjustedItems(editedItems, quote.adjustment)
+    }));
+  }
+
+  private saveRegularQuote(index: number, editedItems: QuoteItem[], editedAdjustment: number) {
+    this.quotes = this.quotes.map((quote, quoteIndex) =>
+      quoteIndex === index
+        ? {
+            ...quote,
+            adjustment: editedAdjustment,
+            items: editedItems
+          }
+        : quote
+    );
   }
 
   private isTextItemField(field: keyof QuoteItem) {
@@ -472,6 +487,14 @@ export class orcamentos {
   }
 
   private getItemTotal(item: QuoteItem) {
-    return [item].reduce(this.sumItems, 0);
+    return [item].reduce(sumItems, 0);
   }
+
+  private setErrorFeedback(error: unknown, fallbackMessage: string) {
+    this.errorMessage = error instanceof Error ? error.message : fallbackMessage;
+  }
+
+  sumItems(total: number, item: QuoteItem) {
+  return sumItems(total, item);
+}
 }

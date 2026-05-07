@@ -36,3 +36,43 @@
     );
   background-clip: content-box;
 }
+
+.derived-product-scroll-area {
+  max-height: 18rem;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--destructive) 82%, var(--border)) transparent;
+  box-shadow:
+    inset 0 10px 14px -16px color-mix(in oklab, var(--destructive) 55%, transparent),
+    inset 0 -10px 14px -16px color-mix(in oklab, var(--destructive) 55%, transparent);
+}
+
+.derived-product-scroll-area::-webkit-scrollbar {
+  width: 0.7rem;
+}
+
+.derived-product-scroll-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.derived-product-scroll-area::-webkit-scrollbar-thumb {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in oklab, var(--destructive) 86%, white),
+      color-mix(in oklab, var(--destructive) 78%, var(--border))
+    );
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: content-box;
+}
+
+.derived-product-scroll-area::-webkit-scrollbar-thumb:hover {
+  background:
+    linear-gradient(
+      180deg,
+      var(--destructive),
+      color-mix(in oklab, var(--destructive) 72%, var(--foreground))
+    );
+  background-clip: content-box;
+}

@@ -338,6 +338,8 @@ export class ExcelGeneratorService {
     labelCell.alignment = { horizontal: 'right', vertical: 'middle', wrapText: false };
     valueCell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: false };
 
+    worksheet.getRow(17).height = 24;
+
     for (let colNumber = 12; colNumber <= 16; colNumber++) {
       const cell = worksheet.getRow(17).getCell(colNumber);
 
