@@ -1,4 +1,129 @@
+.orcamentos-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.budget-card {
+  height: 720px;
+  display: flex;
+  flex-direction: column;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 18px 38px -28px rgba(15, 23, 42, 0.35);
+}
+
+.budget-panel {
+  min-height: 0;
+}
+
+.budget-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.budget-card-header h2 {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.1;
+  color: var(--foreground);
+}
+
+.budget-card-header p {
+  margin: 4px 0 0;
+  color: var(--muted-foreground);
+}
+
+.mode-tabs {
+  display: flex;
+  height: 44px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--muted);
+}
+
+.mode-tabs button {
+  border: 0;
+  border-radius: 6px;
+  padding: 0 18px;
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+
+.mode-tabs button.active {
+  background: var(--background);
+  color: var(--foreground);
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.form-group label {
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--input);
+  color: var(--foreground);
+  padding: 0 14px;
+  outline: none;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.product-table {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.product-table-header {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) 70px 80px 110px 36px;
+  gap: 8px;
+  align-items: center;
+  height: 42px;
+  padding: 0 12px;
+  background: color-mix(in oklab, var(--panel) 88%, var(--border));
+  border-bottom: 1px solid var(--border);
+  color: var(--muted-foreground);
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
 .product-scroll-area {
+  height: 430px;
+  max-height: 430px;
+  min-height: 430px;
+  overflow-y: auto;
+  overflow-x: hidden;
   scrollbar-gutter: stable;
   scrollbar-width: thin;
   scrollbar-color: color-mix(in oklab, var(--panel) 62%, var(--border)) transparent;
@@ -35,4 +160,210 @@
       color-mix(in oklab, var(--panel) 70%, var(--accent))
     );
   background-clip: content-box;
+}
+
+.product-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) 70px 80px 110px 36px;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.product-row input {
+  height: 38px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--input);
+  color: var(--foreground);
+  padding: 0 12px;
+  outline: none;
+}
+
+.product-row button {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+
+.budget-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.secondary-button,
+.primary-button,
+.create-button {
+  height: 42px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  padding: 0 18px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.secondary-button {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.primary-button {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-color: var(--primary);
+}
+
+.adjust-box {
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: color-mix(in oklab, var(--panel) 86%, var(--border));
+  margin-bottom: 20px;
+}
+
+.adjust-box label {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
+.adjust-box p {
+  margin: 10px 0 0;
+  color: var(--muted-foreground);
+}
+
+.adjust-control {
+  display: grid;
+  grid-template-columns: 40px 1fr 40px;
+  gap: 12px;
+}
+
+.adjust-control input,
+.adjust-control button {
+  height: 42px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--input);
+  color: var(--foreground);
+  text-align: center;
+  font-weight: 700;
+}
+
+.preview-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px;
+}
+
+.preview-header span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  min-width: 42px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--destructive);
+  color: var(--destructive-foreground);
+  font-weight: 800;
+}
+
+.derived-scroll-area {
+  position: relative;
+  height: 230px;
+  max-height: 230px;
+  min-height: 230px;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+  isolation: isolate;
+}
+
+.derived-scroll-area::before {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  content: "";
+  background-image:
+    linear-gradient(color-mix(in oklab, var(--border) 34%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklab, var(--border) 34%, transparent) 1px, transparent 1px);
+  background-size: 32px 32px;
+  filter: blur(0.45px);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.derived-scroll-area > div {
+  position: relative;
+  z-index: 1;
+  background: transparent;
+}
+
+.preview-empty {
+  min-height: 110px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+  color: var(--muted-foreground);
+}
+
+.derived-product-row {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) 64px 80px 110px;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+  background: color-mix(in oklab, var(--background) 88%, transparent);
+}
+
+.preview-total {
+  display: flex;
+  justify-content: space-between;
+  padding: 18px;
+  border-top: 1px solid var(--border);
+  font-size: 18px;
+}
+
+.create-button {
+  width: 100%;
+  margin-top: 20px;
+  background: var(--accent);
+  color: var(--accent-foreground);
+  border-color: var(--accent);
+}
+
+@media (max-width: 1100px) {
+  .orcamentos-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .budget-card {
+    height: auto;
+  }
+}
+
+@media (max-width: 720px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .product-table-header,
+  .product-row {
+    grid-template-columns: minmax(160px, 1fr) 64px 72px 90px 32px;
+  }
 }

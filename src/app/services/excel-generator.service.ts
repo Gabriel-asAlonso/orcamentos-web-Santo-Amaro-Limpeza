@@ -39,6 +39,8 @@ export class ExcelGeneratorService {
     const companyDocument = quote.company.cnpj || quote.company.taxId || '';
     const customer = quote.customerData;
 
+    this.applyCustomerDataLayout(worksheet);
+
     worksheet.getCell('A2').value = '';
     worksheet.getCell('A3').value = quote.company.name;
     worksheet.getCell('A3').alignment = { horizontal: 'center', vertical: 'middle' };
@@ -55,29 +57,32 @@ export class ExcelGeneratorService {
     worksheet.getCell('C7').value = customer?.client ?? '';
     worksheet.getCell('C8').value = customer?.fantasyName ?? customer?.client ?? '';
     worksheet.getCell('C9').value = customer?.address ?? '';
+    worksheet.getCell('L9').value = 'Bairro:';
     worksheet.getCell('N9').value = customer?.district ?? '';
     worksheet.getCell('C10').value = customer?.city ?? '';
-    worksheet.getCell('M10').value = customer?.state ?? '';
-    worksheet.getCell('O10').value = customer?.postalCode ?? '';
+    worksheet.getCell('L10').value = 'UF:';
+    worksheet.getCell('N10').value = customer?.state ?? '';
     worksheet.getCell('C11').value = customer?.document ?? '';
     worksheet.getCell('H11').value = customer?.stateRegistration ?? '';
-    worksheet.getCell('N11').value = customer?.region ?? '';
+    worksheet.getCell('L11').value = 'CEP:';
+    worksheet.getCell('N11').value = customer?.postalCode ?? '';
     worksheet.getCell('C12').value = customer?.freight ?? '';
     worksheet.getCell('L12').value = 'Forma Pagto. :';
     worksheet.getCell('N12').value = quote.paymentMethod;
-    worksheet.getCell('L12').font = { bold: false, size: 10 };
-    worksheet.getCell('N12').font = { bold: false, size: 10 };
     worksheet.getCell('C13').value = customer?.phone ?? '';
-    worksheet.getCell('H13').value = customer?.whatsapp ?? '';
-    worksheet.getCell('E13').font = { bold: false, size: 10 };
-    worksheet.getCell('H13').font = { bold: false, size: 10 };
-    worksheet.getCell('N13').value = customer?.priceTable ?? '';
+    worksheet.getCell('L13').value = 'Região:';
+    worksheet.getCell('N13').value = customer?.region ?? '';
     worksheet.getCell('C14').value = customer?.contact ?? '';
+    worksheet.getCell('L14').value = 'WhatsApp';
+    worksheet.getCell('N14').value = customer?.whatsapp ?? '';
     worksheet.getCell('C15').value = customer?.email ?? '';
+    worksheet.getCell('L15').value = 'Tabela Preço:';
+    worksheet.getCell('N15').value = customer?.priceTable ?? '';
     worksheet.getCell('C16').value = customer?.salesperson ?? '';
     worksheet.getCell('C17').value = customer?.externalSalesperson ?? '';
-    worksheet.getCell('C17').font = { bold: true, size: 10 };
+    worksheet.getCell('C17').font = { bold: false, size: 10 };
     worksheet.getCell('C17').alignment = { horizontal: 'center', vertical: 'middle', wrapText: false };
+    this.applyCustomerDataFont(worksheet);
     this.applyDeliveryTimeHeader(worksheet, quote.deliveryTime);
 
     this.fillProducts(worksheet, quote.items);
@@ -266,6 +271,66 @@ export class ExcelGeneratorService {
     worksheet.properties.outlineLevelRow = 0;
   }
 
+  private applyCustomerDataLayout(worksheet: ExcelJS.Worksheet) {
+    [
+      'C9:L9',
+      'N9:Q9',
+      'C10:K10',
+      'O10:R10',
+      'I11:L11',
+      'L12:M12',
+      'N12:Q12',
+      'E13:G13',
+      'H13:J13',
+      'K13:L13',
+      'M13:Q13',
+      'C14:L14',
+      'C15:Q15'
+    ].forEach(range => this.safeUnmergeCells(worksheet, range));
+
+    this.safeMergeCells(worksheet, 'C9:K9');
+    this.safeMergeCells(worksheet, 'L9:M9');
+    this.safeMergeCells(worksheet, 'N9:P9');
+    this.safeMergeCells(worksheet, 'C10:K10');
+    this.safeMergeCells(worksheet, 'L10:M10');
+    this.safeMergeCells(worksheet, 'N10:P10');
+    this.safeMergeCells(worksheet, 'C11:F11');
+    this.safeMergeCells(worksheet, 'G11:H11');
+    this.safeMergeCells(worksheet, 'I11:K11');
+    this.safeMergeCells(worksheet, 'L11:M11');
+    this.safeMergeCells(worksheet, 'N11:P11');
+    this.safeMergeCells(worksheet, 'L12:M12');
+    this.safeMergeCells(worksheet, 'N12:P12');
+    this.safeMergeCells(worksheet, 'L13:M13');
+    this.safeMergeCells(worksheet, 'N13:P13');
+    this.safeMergeCells(worksheet, 'C14:K14');
+    this.safeMergeCells(worksheet, 'L14:M14');
+    this.safeMergeCells(worksheet, 'N14:P14');
+    this.safeMergeCells(worksheet, 'C15:K15');
+    this.safeMergeCells(worksheet, 'L15:M15');
+    this.safeMergeCells(worksheet, 'N15:P15');
+
+    ['E13', 'H13', 'K13', 'M13', 'O10'].forEach(address => {
+      worksheet.getCell(address).value = '';
+    });
+
+    for (let rowNumber = 9; rowNumber <= 15; rowNumber++) {
+      const labelCell = worksheet.getCell(`L${rowNumber}`);
+      const valueCell = worksheet.getCell(`N${rowNumber}`);
+
+      labelCell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: false };
+      valueCell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: false };
+    }
+  }
+
+  private applyCustomerDataFont(worksheet: ExcelJS.Worksheet) {
+    for (let rowNumber = 7; rowNumber <= 17; rowNumber++) {
+      for (let colNumber = 1; colNumber <= 16; colNumber++) {
+        this.setNormalFont(worksheet.getRow(rowNumber).getCell(colNumber));
+      }
+    }
+  }
+
   private applyProductRowLayout(worksheet: ExcelJS.Worksheet, rowNumber: number) {
     this.safeMergeCells(worksheet, `B${rowNumber}:C${rowNumber}`);
     this.safeMergeCells(worksheet, `D${rowNumber}:K${rowNumber}`);
@@ -335,7 +400,7 @@ export class ExcelGeneratorService {
     labelCell.font = { bold: false, size: 10 };
     valueCell.font = { bold: false, size: 10 };
 
-    labelCell.alignment = { horizontal: 'right', vertical: 'middle', wrapText: false };
+    labelCell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: false };
     valueCell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: false };
 
     for (let colNumber = 12; colNumber <= 16; colNumber++) {
@@ -425,6 +490,20 @@ export class ExcelGeneratorService {
     try {
       worksheet.mergeCells(range);
     } catch {}
+  }
+
+  private safeUnmergeCells(worksheet: ExcelJS.Worksheet, range: string) {
+    try {
+      worksheet.unMergeCells(range);
+    } catch {}
+  }
+
+  private setNormalFont(cell: ExcelJS.Cell, size = 10) {
+    cell.font = {
+      ...cell.font,
+      bold: false,
+      size
+    };
   }
 
   private copyCellStyle(source: ExcelJS.Cell, target: ExcelJS.Cell) {

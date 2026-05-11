@@ -14,5 +14,13 @@
     "passwordHash": "$2b$10$2VtzHsU4HcWDcKMo2xZLW.LXxen.hzOl0ylxSUKk9B3ceYeLvlmme",
     "active": true,
     "createdAt": "2026-05-05T01:42:04.459Z"
+  },
+  {
+    "id": "bfaf2743-0366-44dd-a96f-29df42a1743f",
+    "name": "teste",
+    "email": "teste@gmail.com",
+    "passwordHash": "$2b$10$F8jTrlo7PvMoxafdST6KHeChR8WbTlleVEjtYgC.X86XCeWYjtoa.",
+    "active": true,
+    "createdAt": "2026-05-10T22:17:25.462Z"
   }
 ]

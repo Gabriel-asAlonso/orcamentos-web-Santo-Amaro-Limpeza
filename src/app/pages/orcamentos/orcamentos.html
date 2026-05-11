@@ -37,7 +37,7 @@
     </header>
 
     <div class="grid items-stretch gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-      <section class="flex h-full flex-col rounded-lg border bg-card p-4 shadow-panel sm:p-6">
+      <section class="budget-panel flex h-full flex-col rounded-lg border bg-card p-4 shadow-panel sm:p-6">
         <div class="mb-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div>
             <h2 class="text-3xl font-semibold">Criar Orçamento A</h2>
@@ -204,7 +204,7 @@
         </div>
       </section>
 
-      <section class="h-full rounded-lg border bg-card p-4 shadow-panel sm:p-6">
+      <section class="budget-panel flex h-full flex-col rounded-lg border bg-card p-4 shadow-panel sm:p-6">
         <div class="mb-5 flex items-center justify-between gap-4">
           <div>
             <h2 class="text-3xl font-semibold">Derivar novos orçamentos</h2>
@@ -272,12 +272,14 @@
           </div>
 
           <ng-container *ngIf="baseQuote; else lockedPreview">
-            <div
-              *ngFor="let item of previewItems; trackBy: trackItemById"
-              class="grid grid-cols-[1fr_auto] gap-3 border-t py-2 text-sm"
-            >
-              <span>{{ item.quantity }}× {{ item.product }}</span>
-              <strong>{{ currency(item.quantity * item.unitPrice) }}</strong>
+            <div class="derived-scroll-area overflow-y-auto">
+              <div
+                *ngFor="let item of previewItems; trackBy: trackItemById"
+                class="grid grid-cols-[1fr_auto] gap-3 border-t py-2 text-sm"
+              >
+                <span>{{ item.quantity }}× {{ item.product }}</span>
+                <strong>{{ currency(item.quantity * item.unitPrice) }}</strong>
+              </div>
             </div>
           </ng-container>
 
