@@ -374,7 +374,9 @@ export class ExcelComparativoService {
     this.aplicarContornoExterno(worksheet, layout.lastSupplierColumn, lastRow);
     this.limparBordasAbaixoDoConteudo(worksheet, layout.lastStyledSupplierColumn, lastRow);
     this.removerBordasVerticaisDaLinha2(worksheet, layout.lastSupplierColumn);
+    this.adicionarBordaDireitaLinha2(worksheet, layout.lastSupplierColumn);
     this.adicionarBordaDireitaLinha18(worksheet, layout);
+    this.normalizarEstiloCabecalho(worksheet, layout.lastSupplierColumn);
   }
 
   private padronizarBordasExistentes(
@@ -450,6 +452,38 @@ export class ExcelComparativoService {
       };
     } else {
       approvedRowCell.border = {
+        right: { style: 'thin' }
+      };
+    }
+  }
+
+  private normalizarEstiloCabecalho(worksheet: ExcelJS.Worksheet, lastColumn: number): void {
+    for (let rowNumber = 4; rowNumber <= 5; rowNumber++) {
+      const row = worksheet.getRow(rowNumber);
+
+      for (let columnIndex = 1; columnIndex <= lastColumn; columnIndex++) {
+        const cell = row.getCell(columnIndex);
+
+        if (cell.font) {
+          cell.font = {
+            ...cell.font,
+            bold: false
+          };
+        }
+      }
+    }
+  }
+
+  private adicionarBordaDireitaLinha2(worksheet: ExcelJS.Worksheet, lastColumn: number): void {
+    const lastCellRow2 = worksheet.getCell(2, lastColumn);
+
+    if (lastCellRow2.border) {
+      lastCellRow2.border = {
+        ...lastCellRow2.border,
+        right: { style: 'thin' }
+      };
+    } else {
+      lastCellRow2.border = {
         right: { style: 'thin' }
       };
     }
