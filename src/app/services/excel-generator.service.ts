@@ -426,12 +426,9 @@ export class ExcelGeneratorService {
     for (let colNumber = 11; colNumber <= 16; colNumber++) {
       const cell = worksheet.getRow(17).getCell(colNumber);
 
-      cell.border = undefined as any;
+       cell.border = { bottom: { style: 'thin' } };
       cell.fill = undefined as any;
     }
-
-    labelCell.border = { top: { style: 'thin' } };
-    valueCell.border = { top: { style: 'thin' } };
   }
 
   private applyProductHeaderLayout(worksheet: ExcelJS.Worksheet) {
