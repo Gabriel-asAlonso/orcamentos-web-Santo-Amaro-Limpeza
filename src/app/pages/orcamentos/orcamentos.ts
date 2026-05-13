@@ -210,7 +210,8 @@ export class orcamentos {
     this.editingQuoteIndex = index;
     this.editingQuote = {
       ...quote,
-      items: quote.items.map(item => ({ ...item }))
+      items: quote.items.map(item => ({ ...item })),
+      date: quote.date ? new Date(quote.date) : undefined
     };
   }
 
@@ -284,11 +285,27 @@ export class orcamentos {
     };
   }
 
+  updateEditingDate(value: string) {
+    if (!this.editingQuote) return;
+
+    const newDate = value ? new Date(value) : undefined;
+    this.editingQuote = {
+      ...this.editingQuote,
+      date: newDate
+    };
+  }
+
+  getFormattedDate(date?: Date): string {
+    if (!date) return '';
+    return date.toISOString().split('T')[0];
+  }
+
   saveEditingQuote() {
     if (!this.editingQuote) return;
 
     const editedItems = this.editingQuote.items.map(item => ({ ...item }));
     const editedAdjustment = this.editingQuote.adjustment;
+    const editedDate = this.editingQuote.date;
 
     if (this.editingQuoteIndex === null) return;
 
@@ -296,7 +313,8 @@ export class orcamentos {
       this.quotes = this.quotes.map((quote, index) => ({
         ...quote,
         adjustment: index === 0 ? editedAdjustment : quote.adjustment,
-        items: index === 0 ? editedItems : this.adjustedItems(editedItems, quote.adjustment)
+        items: index === 0 ? editedItems : this.adjustedItems(editedItems, quote.adjustment),
+        date: index === 0 ? editedDate : quote.date
       }));
 
       this.closeEditQuote();
@@ -308,7 +326,8 @@ export class orcamentos {
         ? {
             ...quote,
             adjustment: editedAdjustment,
-            items: editedItems
+            items: editedItems,
+            date: editedDate
           }
         : quote
     );
@@ -338,7 +357,8 @@ export class orcamentos {
         customerData: this.customerData,
         items: this.adjustedItems(this.items, this.baseAdjustment),
         adjustment: this.baseAdjustment,
-        source: this.isImportedBaseLocked ? 'Excel' : source
+        source: this.isImportedBaseLocked ? 'Excel' : source,
+        date: new Date()
       }
     ];
   }
@@ -358,7 +378,8 @@ export class orcamentos {
         customerData: this.baseQuote.customerData,
         items: this.previewItems.map(item => ({ ...item })),
         adjustment: this.derivedAdjustment,
-        source: 'Derivado do Orçamento A'
+        source: 'Derivado do Orçamento A',
+        date: this.baseQuote.date ? new Date(this.baseQuote.date) : undefined
       }
     ];
   }
