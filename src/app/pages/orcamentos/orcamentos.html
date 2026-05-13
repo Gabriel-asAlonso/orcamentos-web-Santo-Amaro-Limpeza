@@ -463,14 +463,14 @@
     (click)="closeEditQuote()"
   >
     <section
-      class="w-full max-w-3xl rounded-lg border bg-card p-5 text-card-foreground shadow-panel sm:p-6"
+      class="w-full max-w-5xl rounded-lg border bg-card p-5 text-card-foreground shadow-panel sm:p-6"
       (click)="$event.stopPropagation()"
     >
-      <div class="mb-5 flex items-start justify-between gap-4">
-        <div>
+      <div class="mb-6 flex items-start justify-between gap-4">
+        <div class="flex-1">
           <h2 class="text-xl font-semibold">Editar {{ quote.label }}</h2>
-          <p class="text-sm text-muted-foreground">
-            {{ quote.company.name }} — ajuste produtos, quantidades, unidades e valores.
+          <p class="mt-1 text-sm text-muted-foreground">
+            {{ quote.company.name }} — ajuste produtos, quantidades, unidades, códigos e valores.
           </p>
         </div>
 
@@ -484,20 +484,49 @@
         </button>
       </div>
 
+      <div class="mb-5 grid grid-cols-1 gap-4 rounded-lg border bg-secondary/30 p-4 sm:grid-cols-2">
+        <div class="space-y-1">
+          <label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Empresa
+          </label>
+          <p class="text-sm font-medium text-foreground">{{ quote.company.name }}</p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Data do orçamento
+          </label>
+          <input
+            class="mt-1.5 h-9 w-full rounded-md border bg-background px-3 py-1.5 text-sm"
+            type="date"
+            [value]="getFormattedDate(quote.date)"
+            (change)="updateEditingDate($any($event.target).value)"
+          />
+        </div>
+      </div>
+
       <div class="overflow-hidden rounded-lg border">
-        <div class="grid grid-cols-[1fr_5rem_5.5rem_8rem_2.5rem] gap-2 bg-muted px-3 py-2 text-xs font-bold uppercase text-muted-foreground">
+        <div class="grid grid-cols-[2rem_1fr_4.5rem_5rem_7rem_2.5rem] gap-2 bg-muted px-3 py-2 text-xs font-bold uppercase text-muted-foreground">
+          <span class="text-center">Cód.</span>
           <span>Produto</span>
-          <span>Qtd.</span>
-          <span>Unid.</span>
-          <span>Valor</span>
+          <span class="text-center">Qtd.</span>
+          <span class="text-center">Unid.</span>
+          <span class="text-right">Valor</span>
           <span></span>
         </div>
 
-        <div class="max-h-[18rem] overflow-y-auto bg-secondary/25">
+        <div class="max-h-[20rem] overflow-y-auto bg-secondary/25">
           <div
             *ngFor="let item of quote.items; trackBy: trackItemById"
-            class="grid grid-cols-[1fr_5rem_5.5rem_8rem_2.5rem] gap-2 border-t bg-card p-2"
+            class="grid grid-cols-[2rem_1fr_4.5rem_5rem_7rem_2.5rem] gap-2 border-t bg-card p-2"
           >
+            <input
+              class="min-w-0 rounded-md border bg-background px-2 py-2 text-sm text-center text-xs"
+              [value]="item.code"
+              (input)="updateEditingItem(item.id, 'code', $any($event.target).value)"
+              placeholder="001"
+            />
+
             <input
               class="min-w-0 rounded-md border bg-background px-3 py-2 text-sm"
               [value]="item.product"
@@ -506,20 +535,20 @@
             />
 
             <input
-              class="min-w-0 rounded-md border bg-background px-2 py-2 text-sm"
+              class="min-w-0 rounded-md border bg-background px-2 py-2 text-sm text-center"
               type="number"
               [value]="item.quantity"
               (input)="updateEditingItem(item.id, 'quantity', $any($event.target).value)"
             />
 
             <input
-              class="min-w-0 rounded-md border bg-background px-2 py-2 text-sm"
+              class="min-w-0 rounded-md border bg-background px-2 py-2 text-sm text-center"
               [value]="item.unit"
               (input)="updateEditingItem(item.id, 'unit', $any($event.target).value)"
             />
 
             <input
-              class="min-w-0 rounded-md border bg-background px-2 py-2 text-sm"
+              class="min-w-0 rounded-md border bg-background px-2 py-2 text-sm text-right"
               type="number"
               [value]="item.unitPrice"
               (input)="updateEditingItem(item.id, 'unitPrice', $any($event.target).value)"

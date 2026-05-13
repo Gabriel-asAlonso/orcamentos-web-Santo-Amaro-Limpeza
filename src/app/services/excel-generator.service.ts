@@ -48,7 +48,8 @@ export class ExcelGeneratorService {
     worksheet.getCell('C4').value = '';
     worksheet.getCell('D4').value = '';
     this.safeMergeCells(worksheet, 'M4:O4');
-    worksheet.getCell('M4').value = `Data: ${new Date().toLocaleDateString('pt-BR')}`;
+    const quoteDate = quote.date ? new Date(quote.date) : new Date();
+    worksheet.getCell('M4').value = `Data: ${quoteDate.toLocaleDateString('pt-BR')}`;
     worksheet.getCell('M4').alignment = { horizontal: 'right', vertical: 'middle' };
     worksheet.getCell('M4').font = { bold: true, size: 10 };
     worksheet.getCell('N4').font = { bold: true, size: 10 };

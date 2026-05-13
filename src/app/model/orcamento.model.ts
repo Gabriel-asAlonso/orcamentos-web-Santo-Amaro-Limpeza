@@ -50,4 +50,5 @@ export type Quote = {
   items: QuoteItem[];
   adjustment: number;
   source: string;
+  date?: Date;
 };
