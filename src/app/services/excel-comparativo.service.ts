@@ -158,7 +158,6 @@ export class ExcelComparativoService {
     worksheet: ExcelJS.Worksheet,
     quotes: ComparativeQuote[]
   ): void {
-    this.safeMergeCells(worksheet, 1, 1, 2, 6);
     const titleCell = worksheet.getCell('A1');
     titleCell.value = 'Planilha - Mapa Comparativo';
     titleCell.alignment = {
@@ -265,7 +264,7 @@ export class ExcelComparativoService {
   }
 
   private recriarMesclagens(worksheet: ExcelJS.Worksheet, layout: ComparativeLayout): void {
-    this.safeMergeCells(worksheet, 1, 2, 1, layout.lastSupplierColumn);
+    this.safeMergeCells(worksheet, 1, 1, 2, layout.lastSupplierColumn);
     this.safeMergeCells(worksheet, 4, 1, 5, 1);
     this.safeMergeCells(worksheet, 4, 2, 5, 2);
     this.safeMergeCells(worksheet, layout.totalRow, 1, layout.totalRow, 3);
