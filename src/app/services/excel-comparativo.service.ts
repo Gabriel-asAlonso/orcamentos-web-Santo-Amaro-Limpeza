@@ -252,7 +252,7 @@ export class ExcelComparativoService {
       this.aplicarEstiloLinhaResumo(worksheet.getRow(rowIndex), layout.lastSupplierColumn);
     }
 
-    worksheet.getRow(layout.deliveryRow).height = 46;
+    worksheet.getRow(layout.deliveryRow).height = 60;
   }
 
   private recriarMesclagens(worksheet: ExcelJS.Worksheet, layout: ComparativeLayout): void {
@@ -319,7 +319,7 @@ export class ExcelComparativoService {
 
   private aplicarEstiloCabecalhoFornecedor(cell: ExcelJS.Cell): void {
     cell.font = {
-      bold: true,
+      bold: false,
       size: 10
     };
 
@@ -372,6 +372,8 @@ export class ExcelComparativoService {
     this.padronizarBordasExistentes(worksheet, layout.lastSupplierColumn, lastRow);
     this.aplicarContornoExterno(worksheet, layout.lastSupplierColumn, lastRow);
     this.limparBordasAbaixoDoConteudo(worksheet, layout.lastStyledSupplierColumn, lastRow);
+    this.removerBordasVerticaisDaLinha2(worksheet, layout.lastSupplierColumn);
+    this.adicionarBordaDireitaLinha18(worksheet, layout);
   }
 
   private padronizarBordasExistentes(
@@ -417,6 +419,38 @@ export class ExcelComparativoService {
       for (let columnIndex = 1; columnIndex <= lastColumn; columnIndex++) {
         worksheet.getCell(rowNumber, columnIndex).border = undefined as any;
       }
+    }
+  }
+
+  private removerBordasVerticaisDaLinha2(worksheet: ExcelJS.Worksheet, lastColumn: number): void {
+    const row2 = worksheet.getRow(2);
+
+    for (let columnIndex = 1; columnIndex <= lastColumn; columnIndex++) {
+      const cell = row2.getCell(columnIndex);
+
+      if (cell.border) {
+        const updatedBorder: Partial<ExcelJS.Borders> = {};
+
+        if (cell.border.top) updatedBorder.top = cell.border.top;
+        if (cell.border.bottom) updatedBorder.bottom = cell.border.bottom;
+
+        cell.border = updatedBorder;
+      }
+    }
+  }
+
+  private adicionarBordaDireitaLinha18(worksheet: ExcelJS.Worksheet, layout: ComparativeLayout): void {
+    const approvedRowCell = worksheet.getCell(layout.approvedRow, layout.lastSupplierColumn);
+
+    if (approvedRowCell.border) {
+      approvedRowCell.border = {
+        ...approvedRowCell.border,
+        right: { style: 'thin' }
+      };
+    } else {
+      approvedRowCell.border = {
+        right: { style: 'thin' }
+      };
     }
   }
 
