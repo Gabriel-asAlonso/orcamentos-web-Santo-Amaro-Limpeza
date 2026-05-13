@@ -165,6 +165,12 @@ export class ExcelComparativoService {
       vertical: 'middle',
       wrapText: false
     };
+    titleCell.border = {
+      top: { style: 'thin' },
+      bottom: { style: 'thin' },
+      left: { style: 'thin' },
+      right: { style: 'thin' }
+    };
 
     worksheet.getCell('B3').value = this.getCustomerName(quotes[0]) || 'Cliente';
     worksheet.getCell('D3').value = 'Produtos de Limpeza';
