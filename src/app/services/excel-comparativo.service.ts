@@ -346,6 +346,7 @@ export class ExcelComparativoService {
 
       cell.font = {
         ...cell.font,
+        bold: false,
         size: columnIndex === 2 || columnIndex === 3 ? 9 : 10
       };
     }
