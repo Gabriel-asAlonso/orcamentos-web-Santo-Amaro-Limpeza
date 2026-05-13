@@ -158,6 +158,7 @@ export class ExcelComparativoService {
     worksheet: ExcelJS.Worksheet,
     quotes: ComparativeQuote[]
   ): void {
+    worksheet.getCell('B1').value = 'Planilha - Mapa Comparativo';
     worksheet.getCell('B3').value = this.getCustomerName(quotes[0]) || 'Cliente';
     worksheet.getCell('D3').value = 'Produtos de Limpeza';
 
