@@ -51,7 +51,7 @@ export const COMPANIES: Company[] = [
     address: 'Rua São Leonardo, 35 - Freguesia do Ó - São Paulo - SP',
     identity: 'Contato: Antonio Roberto',
     taxId: '61.621.272/0001-01',
-    logoPath: '/logoPegLimp.png',
+    logoPath: '/logoPagLimp.png',
     contact: 'Antonio Roberto',
     phone: '3991-0045 / 93092-8003',
     email: 'peglimp@terra.com.br',

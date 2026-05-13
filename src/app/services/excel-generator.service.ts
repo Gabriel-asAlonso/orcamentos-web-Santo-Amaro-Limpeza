@@ -37,6 +37,7 @@ export class ExcelGeneratorService {
     await this.insertCompanyLogo(workbook, worksheet, quote.company.logoPath);
 
     const companyDocument = quote.company.cnpj || quote.company.taxId || '';
+    const companyAddress = quote.company.address || '';
     const customer = quote.customerData;
 
     this.applyCustomerDataLayout(worksheet);
@@ -54,6 +55,13 @@ export class ExcelGeneratorService {
     worksheet.getCell('M4').font = { bold: true, size: 10 };
     worksheet.getCell('N4').font = { bold: true, size: 10 };
     worksheet.getCell('D5').value = companyDocument;
+    this.safeMergeCells(worksheet, 'D6:L6');
+    worksheet.getCell('C6').value = companyAddress ? 'Endereço:' : '';
+    worksheet.getCell('D6').value = companyAddress;
+    worksheet.getCell('C6').alignment = { horizontal: 'right', vertical: 'middle', wrapText: false };
+    worksheet.getCell('D6').alignment = { horizontal: 'left', vertical: 'middle', wrapText: false };
+    worksheet.getCell('C6').font = { bold: false, size: 9 };
+    worksheet.getCell('D6').font = { bold: false, size: 9 };
 
     worksheet.getCell('C7').value = customer?.client ?? '';
     worksheet.getCell('C8').value = customer?.fantasyName ?? customer?.client ?? '';
@@ -234,7 +242,7 @@ export class ExcelGeneratorService {
     worksheet.getColumn(3).width = 8;
 
     worksheet.getColumn(4).width = 7;
-    worksheet.getColumn(5).width = 7;
+    worksheet.getColumn(5).width = 14;
     worksheet.getColumn(6).width = 7;
     worksheet.getColumn(7).width = 7;
     worksheet.getColumn(8).width = 7;

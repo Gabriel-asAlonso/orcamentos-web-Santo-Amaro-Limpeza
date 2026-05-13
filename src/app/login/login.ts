@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { environment } from '../../environments/environment';
 import {
   ArrowRight,
   Eye,
@@ -42,7 +43,7 @@ export class Login {
   errorMessage = '';
 
   logoUrl = '/logoQuadrada.jpg';
-  private readonly apiUrl = 'http://localhost:3000';
+  private readonly apiUrl = environment.apiUrl;
 
   constructor(
     private router: Router,
