@@ -57,33 +57,34 @@ export class ExcelGeneratorService {
     worksheet.getCell('C7').value = customer?.client ?? '';
     worksheet.getCell('C8').value = customer?.fantasyName ?? customer?.client ?? '';
     worksheet.getCell('C9').value = customer?.address ?? '';
-    worksheet.getCell('L9').value = 'Bairro:';
-    worksheet.getCell('N9').value = customer?.district ?? '';
+    worksheet.getCell('K9').value = 'Bairro:';
+    worksheet.getCell('M9').value = customer?.district ?? '';
     worksheet.getCell('C10').value = customer?.city ?? '';
-    worksheet.getCell('L10').value = 'UF:';
-    worksheet.getCell('N10').value = customer?.state ?? '';
+    worksheet.getCell('K10').value = 'UF:';
+    worksheet.getCell('M10').value = customer?.state ?? '';
     worksheet.getCell('C11').value = customer?.document ?? '';
     worksheet.getCell('H11').value = customer?.stateRegistration ?? '';
-    worksheet.getCell('L11').value = 'CEP:';
-    worksheet.getCell('N11').value = customer?.postalCode ?? '';
+    worksheet.getCell('K11').value = 'CEP:';
+    worksheet.getCell('M11').value = customer?.postalCode ?? '';
     worksheet.getCell('C12').value = customer?.freight ?? '';
-    worksheet.getCell('L12').value = 'Forma Pagto. :';
-    worksheet.getCell('N12').value = quote.paymentMethod;
+    worksheet.getCell('K12').value = 'Forma Pagto. :';
+    worksheet.getCell('M12').value = quote.paymentMethod;
     worksheet.getCell('C13').value = customer?.phone ?? '';
-    worksheet.getCell('L13').value = 'Região:';
-    worksheet.getCell('N13').value = customer?.region ?? '';
+    worksheet.getCell('K13').value = 'Região:';
+    worksheet.getCell('M13').value = customer?.region ?? '';
     worksheet.getCell('C14').value = customer?.contact ?? '';
-    worksheet.getCell('L14').value = 'WhatsApp';
-    worksheet.getCell('N14').value = customer?.whatsapp ?? '';
+    worksheet.getCell('K14').value = 'WhatsApp';
+    worksheet.getCell('M14').value = customer?.whatsapp ?? '';
     worksheet.getCell('C15').value = customer?.email ?? '';
-    worksheet.getCell('L15').value = 'Tabela Preço:';
-    worksheet.getCell('N15').value = customer?.priceTable ?? '';
+    worksheet.getCell('K15').value = 'Tabela Preço:';
+    worksheet.getCell('M15').value = customer?.priceTable ?? '';
     worksheet.getCell('C16').value = customer?.salesperson ?? '';
     worksheet.getCell('C17').value = customer?.externalSalesperson ?? '';
     worksheet.getCell('C17').font = { bold: false, size: 10 };
     worksheet.getCell('C17').alignment = { horizontal: 'center', vertical: 'middle', wrapText: false };
     this.applyCustomerDataFont(worksheet);
     this.applyDeliveryTimeHeader(worksheet, quote.deliveryTime);
+    this.applyProductHeaderLayout(worksheet);
 
     this.fillProducts(worksheet, quote.items);
 
@@ -274,49 +275,66 @@ export class ExcelGeneratorService {
   private applyCustomerDataLayout(worksheet: ExcelJS.Worksheet) {
     [
       'C9:L9',
+      'C9:K9',
+      'L9:M9',
+      'N9:P9',
       'N9:Q9',
       'C10:K10',
+      'L10:M10',
+      'N10:P10',
       'O10:R10',
       'I11:L11',
+      'I11:K11',
+      'L11:M11',
+      'N11:P11',
       'L12:M12',
+      'N12:P12',
       'N12:Q12',
       'E13:G13',
       'H13:J13',
       'K13:L13',
+      'L13:M13',
+      'N13:P13',
       'M13:Q13',
       'C14:L14',
+      'C14:K14',
+      'L14:M14',
+      'N14:P14',
+      'C15:K15',
+      'L15:M15',
+      'N15:P15',
       'C15:Q15'
     ].forEach(range => this.safeUnmergeCells(worksheet, range));
 
-    this.safeMergeCells(worksheet, 'C9:K9');
-    this.safeMergeCells(worksheet, 'L9:M9');
-    this.safeMergeCells(worksheet, 'N9:P9');
-    this.safeMergeCells(worksheet, 'C10:K10');
-    this.safeMergeCells(worksheet, 'L10:M10');
-    this.safeMergeCells(worksheet, 'N10:P10');
+    this.safeMergeCells(worksheet, 'C9:J9');
+    this.safeMergeCells(worksheet, 'K9:L9');
+    this.safeMergeCells(worksheet, 'M9:P9');
+    this.safeMergeCells(worksheet, 'C10:J10');
+    this.safeMergeCells(worksheet, 'K10:L10');
+    this.safeMergeCells(worksheet, 'M10:P10');
     this.safeMergeCells(worksheet, 'C11:F11');
     this.safeMergeCells(worksheet, 'G11:H11');
-    this.safeMergeCells(worksheet, 'I11:K11');
-    this.safeMergeCells(worksheet, 'L11:M11');
-    this.safeMergeCells(worksheet, 'N11:P11');
-    this.safeMergeCells(worksheet, 'L12:M12');
-    this.safeMergeCells(worksheet, 'N12:P12');
-    this.safeMergeCells(worksheet, 'L13:M13');
-    this.safeMergeCells(worksheet, 'N13:P13');
-    this.safeMergeCells(worksheet, 'C14:K14');
-    this.safeMergeCells(worksheet, 'L14:M14');
-    this.safeMergeCells(worksheet, 'N14:P14');
-    this.safeMergeCells(worksheet, 'C15:K15');
-    this.safeMergeCells(worksheet, 'L15:M15');
-    this.safeMergeCells(worksheet, 'N15:P15');
+    this.safeMergeCells(worksheet, 'I11:J11');
+    this.safeMergeCells(worksheet, 'K11:L11');
+    this.safeMergeCells(worksheet, 'M11:P11');
+    this.safeMergeCells(worksheet, 'K12:L12');
+    this.safeMergeCells(worksheet, 'M12:P12');
+    this.safeMergeCells(worksheet, 'K13:L13');
+    this.safeMergeCells(worksheet, 'M13:P13');
+    this.safeMergeCells(worksheet, 'C14:J14');
+    this.safeMergeCells(worksheet, 'K14:L14');
+    this.safeMergeCells(worksheet, 'M14:P14');
+    this.safeMergeCells(worksheet, 'C15:J15');
+    this.safeMergeCells(worksheet, 'K15:L15');
+    this.safeMergeCells(worksheet, 'M15:P15');
 
-    ['E13', 'H13', 'K13', 'M13', 'O10'].forEach(address => {
+    ['E13', 'H13', 'N9', 'N10', 'N11', 'N12', 'N13', 'N14', 'N15', 'O10'].forEach(address => {
       worksheet.getCell(address).value = '';
     });
 
     for (let rowNumber = 9; rowNumber <= 15; rowNumber++) {
-      const labelCell = worksheet.getCell(`L${rowNumber}`);
-      const valueCell = worksheet.getCell(`N${rowNumber}`);
+      const labelCell = worksheet.getCell(`K${rowNumber}`);
+      const valueCell = worksheet.getCell(`M${rowNumber}`);
 
       labelCell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: false };
       valueCell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: false };
@@ -388,11 +406,13 @@ export class ExcelGeneratorService {
   }
 
   private applyDeliveryTimeHeader(worksheet: ExcelJS.Worksheet, deliveryTime: string) {
-    this.safeMergeCells(worksheet, 'L17:M17');
-    this.safeMergeCells(worksheet, 'N17:P17');
+    this.safeUnmergeCells(worksheet, 'L17:M17');
+    this.safeUnmergeCells(worksheet, 'N17:P17');
+    this.safeMergeCells(worksheet, 'K17:L17');
+    this.safeMergeCells(worksheet, 'M17:P17');
 
-    const labelCell = worksheet.getCell('L17');
-    const valueCell = worksheet.getCell('N17');
+    const labelCell = worksheet.getCell('K17');
+    const valueCell = worksheet.getCell('M17');
 
     labelCell.value = 'Prazo de Entrega:';
     valueCell.value = deliveryTime;
@@ -403,12 +423,21 @@ export class ExcelGeneratorService {
     labelCell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: false };
     valueCell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: false };
 
-    for (let colNumber = 12; colNumber <= 16; colNumber++) {
+    for (let colNumber = 11; colNumber <= 16; colNumber++) {
       const cell = worksheet.getRow(17).getCell(colNumber);
 
       cell.border = undefined as any;
       cell.fill = undefined as any;
     }
+  }
+
+  private applyProductHeaderLayout(worksheet: ExcelJS.Worksheet) {
+    const k18 = worksheet.getCell('K18');
+
+    k18.border = {
+      ...k18.border,
+      top: { style: 'thin' }
+    };
   }
 
   private clearWorksheetRowGrouping(
