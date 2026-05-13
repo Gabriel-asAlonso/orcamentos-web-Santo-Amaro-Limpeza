@@ -64,7 +64,7 @@ export const COMPANIES: Company[] = [
     id: 'grapa-clean',
     name: 'GRAPACLEAN INSUMOS CORPORATIVOS EIRELI',
     address: 'Av. Manuel Alves Soares, 199 - Jd. Colonial - São Paulo SP - CEP 04821-270',
-    identity: 'Telefone: (11) 5663-5800 At.: Rafael',
+    identity: 'Telefone: (11) 5663-5800',
     taxId: '',
     logoPath: '/logoGrapaClean.png',
     contact: 'Rafael',
@@ -72,6 +72,21 @@ export const COMPANIES: Company[] = [
     email: '',
     postalCode: '04821-270',
     cnpj: '33.807.887/0001-83',
+    stateRegistration: '126.188.105.117',
+    website: 'www.grapaclean.com.br'
+  },
+  {
+    id: 'Santa Limpeza',
+    name: 'SANTA LIMPEZA COMÉRCIO DE PRODUTOS DE LIMPEZA LTDA',
+    address: 'Av João Carlos da Silva Borges 838 - São Paulo SP - CEP 04726-001',
+    identity: 'Telefone: Fone 11 5641-1729',
+    taxId: '',
+    logoPath: '/logoSantoAmaroLimpeza.png',
+    contact: 'Ana Paula',
+    phone: 'Fone 11 5641-1729',
+    email: '',
+    postalCode: '04726-001',
+    cnpj: ' 31622352/0001-02',
     stateRegistration: '126.188.105.117',
     website: 'www.grapaclean.com.br'
   }

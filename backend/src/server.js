@@ -3,8 +3,6 @@ const cors = require('cors');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
-const fs = require('fs/promises');
-const path = require('path');
 
 dotenv.config();
 
@@ -13,7 +11,38 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET;
 const FRONTEND_URL = process.env.FRONTEND_URL;
-const USERS_FILE = path.join(__dirname, '..', 'data', 'users.json');
+
+// Usuários fixos — senhas gerenciadas via hash bcrypt
+const USERS = [
+  {
+    id: '8740c0de-ab12-4d23-9fec-69cc231a8944',
+    name: 'Administrador',
+    email: 'admin@empresa.com',
+    passwordHash: '$2b$10$5.ITh6n7ND0EdDxt.SbopeOYfjTMoLpQa79hh9P9O67eWyQHfRluW',
+    active: true
+  },
+  {
+    id: 'bfaf2743-0366-44dd-a96f-29df42a1743f',
+    name: 'Ana Paula',
+    email: 'anapaula@santoamarolimpeza.com.br',
+    passwordHash: '$2b$10$bWDqZfGNHTVPS8OkCU3t6.DJVVx.G1sok3iFa2uhYUFfYnflZ3KvW',
+    active: true
+  },
+  {
+    id: 'ab5cb4a3-ce30-4316-ba95-e249a7931823',
+    name: 'Vendas',
+    email: 'vendas@santoamarolimpeza.com.br',
+    passwordHash: '$2b$10$hDTWkXvEmm07PhFUp8AmgOJoWRtFX1azX1kMdtK.SZtVKNDpur.G6',
+    active: true
+  },
+  {
+    id: '2b278497-10e8-4277-8046-82d0bb8a16ca',
+    name: 'Loja Virtual',
+    email: 'lojavirtual@santoamarolimpeza.com.br',
+    passwordHash: '$2b$10$be32TVltcd8jL6UJVbvlWOFRtqVtlUyNvFBnNTMGPlR9VMrH4j3Nq',
+    active: true
+  }
+];
 
 app.use(cors({
   origin: FRONTEND_URL,
@@ -21,15 +50,6 @@ app.use(cors({
 }));
 
 app.use(express.json());
-
-async function readUsers() {
-  const data = await fs.readFile(USERS_FILE, 'utf-8');
-  return JSON.parse(data);
-}
-
-async function writeUsers(users) {
-  await fs.writeFile(USERS_FILE, JSON.stringify(users, null, 2));
-}
 
 function createToken(user) {
   return jwt.sign(
@@ -39,9 +59,7 @@ function createToken(user) {
       email: user.email
     },
     JWT_SECRET,
-    {
-      expiresIn: '8h'
-    }
+    { expiresIn: '8h' }
   );
 }
 
@@ -67,47 +85,6 @@ function authMiddleware(req, res, next) {
   }
 }
 
-app.post('/auth/register', async (req, res) => {
-  const { name, email, password } = req.body;
-
-  if (!name || !email || !password) {
-    return res.status(400).json({ message: 'Nome, email e senha são obrigatórios.' });
-  }
-
-  const users = await readUsers();
-
-  const emailAlreadyExists = users.some(user => user.email === email);
-
-  if (emailAlreadyExists) {
-    return res.status(409).json({ message: 'Este email já está cadastrado.' });
-  }
-
-  const passwordHash = await bcrypt.hash(password, 10);
-
-  const newUser = {
-    id: crypto.randomUUID(),
-    name,
-    email,
-    passwordHash,
-    active: true,
-    createdAt: new Date().toISOString()
-  };
-
-  users.push(newUser);
-
-  await writeUsers(users);
-
-  return res.status(201).json({
-    message: 'Usuário criado com sucesso.',
-    user: {
-      id: newUser.id,
-      name: newUser.name,
-      email: newUser.email,
-      active: newUser.active
-    }
-  });
-});
-
 app.post('/auth/login', async (req, res) => {
   const { email, password } = req.body;
 
@@ -115,9 +92,7 @@ app.post('/auth/login', async (req, res) => {
     return res.status(400).json({ message: 'Email e senha são obrigatórios.' });
   }
 
-  const users = await readUsers();
-
-  const user = users.find(item => item.email === email);
+  const user = USERS.find(u => u.email.toLowerCase() === email.toLowerCase());
 
   if (!user) {
     return res.status(401).json({ message: 'Email ou senha inválidos.' });
@@ -146,10 +121,8 @@ app.post('/auth/login', async (req, res) => {
   });
 });
 
-app.get('/auth/me', authMiddleware, async (req, res) => {
-  const users = await readUsers();
-
-  const user = users.find(item => item.id === req.user.id);
+app.get('/auth/me', authMiddleware, (req, res) => {
+  const user = USERS.find(u => u.id === req.user.id);
 
   if (!user) {
     return res.status(404).json({ message: 'Usuário não encontrado.' });
@@ -163,43 +136,12 @@ app.get('/auth/me', authMiddleware, async (req, res) => {
   });
 });
 
-app.get('/users', authMiddleware, async (req, res) => {
-  const users = await readUsers();
-
-  const safeUsers = users.map(user => ({
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    active: user.active,
-    createdAt: user.createdAt
+app.get('/users', authMiddleware, (req, res) => {
+  const safeUsers = USERS.map(({ id, name, email, active }) => ({
+    id, name, email, active
   }));
 
   return res.json(safeUsers);
-});
-
-app.patch('/users/:id/status', authMiddleware, async (req, res) => {
-  const { id } = req.params;
-  const { active } = req.body;
-
-  if (typeof active !== 'boolean') {
-    return res.status(400).json({ message: 'Status inválido.' });
-  }
-
-  const users = await readUsers();
-
-  const userIndex = users.findIndex(user => user.id === id);
-
-  if (userIndex === -1) {
-    return res.status(404).json({ message: 'Usuário não encontrado.' });
-  }
-
-  users[userIndex].active = active;
-
-  await writeUsers(users);
-
-  return res.json({
-    message: 'Status atualizado com sucesso.'
-  });
 });
 
 app.get('/', (req, res) => {

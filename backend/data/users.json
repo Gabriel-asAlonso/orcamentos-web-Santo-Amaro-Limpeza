@@ -22,5 +22,29 @@
     "passwordHash": "$2b$10$F8jTrlo7PvMoxafdST6KHeChR8WbTlleVEjtYgC.X86XCeWYjtoa.",
     "active": true,
     "createdAt": "2026-05-10T22:17:25.462Z"
+  },
+  {
+    "id": "592bbc06-7178-4158-a5d7-7957a2af9661",
+    "name": "Ana Paula",
+    "email": "Anapaula@santoamarolimpeza.com.br",
+    "passwordHash": "$2b$10$bWDqZfGNHTVPS8OkCU3t6.DJVVx.G1sok3iFa2uhYUFfYnflZ3KvW",
+    "active": true,
+    "createdAt": "2026-05-13T11:13:05.088Z"
+  },
+  {
+    "id": "ab5cb4a3-ce30-4316-ba95-e249a7931823",
+    "name": "Vendas",
+    "email": "Vendas@santoamarolimpeza.com.br",
+    "passwordHash": "$2b$10$hDTWkXvEmm07PhFUp8AmgOJoWRtFX1azX1kMdtK.SZtVKNDpur.G6",
+    "active": true,
+    "createdAt": "2026-05-13T11:14:37.289Z"
+  },
+  {
+    "id": "2b278497-10e8-4277-8046-82d0bb8a16ca",
+    "name": "Loja Virtual",
+    "email": "Lojavirtual@santoamarolimpeza.com.br",
+    "passwordHash": "$2b$10$be32TVltcd8jL6UJVbvlWOFRtqVtlUyNvFBnNTMGPlR9VMrH4j3Nq",
+    "active": true,
+    "createdAt": "2026-05-13T11:16:28.423Z"
   }
 ]
