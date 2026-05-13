@@ -409,6 +409,9 @@ export class ExcelGeneratorService {
       cell.border = undefined as any;
       cell.fill = undefined as any;
     }
+
+    labelCell.border = { top: { style: 'thin' } };
+    valueCell.border = { top: { style: 'thin' } };
   }
 
   private clearWorksheetRowGrouping(
