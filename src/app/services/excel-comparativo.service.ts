@@ -515,6 +515,7 @@ export class ExcelComparativoService {
     worksheet.getColumn(1).width = 7.75;
     worksheet.getColumn(2).width = 67.38;
     worksheet.getColumn(3).width = 14.75;
+    worksheet.getColumn(5).width = 18;
 
     for (let columnIndex = this.firstSupplierColumn; columnIndex <= lastSupplierColumn; columnIndex++) {
       worksheet.getColumn(columnIndex).width = 18.38;
