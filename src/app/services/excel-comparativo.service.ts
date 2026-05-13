@@ -346,6 +346,7 @@ export class ExcelComparativoService {
 
       cell.font = {
         ...cell.font,
+        bold: false,
         size: columnIndex === 2 || columnIndex === 3 ? 9 : 10
       };
     }
@@ -436,6 +437,18 @@ export class ExcelComparativoService {
 
         cell.border = updatedBorder;
       }
+    }
+
+    const lastCellRow2 = row2.getCell(lastColumn);
+    if (lastCellRow2.border) {
+      lastCellRow2.border = {
+        ...lastCellRow2.border,
+        right: { style: 'thin' }
+      };
+    } else {
+      lastCellRow2.border = {
+        right: { style: 'thin' }
+      };
     }
   }
 
