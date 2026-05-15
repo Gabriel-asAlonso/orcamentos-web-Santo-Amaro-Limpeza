@@ -20,7 +20,7 @@ import {
 } from 'lucide-angular';
 import { CustomerData, Quote, QuoteItem } from '../../model/orcamento.model';
 import { ExcelComparativoService, type ComparativeQuote } from '../../services/excel-comparativo.service';
-import { ExcelGeneratorService } from '../../services/excel-generator.service';
+import { ExcelGeneratorFactory } from '../../services/excel-generator-factory';
 import { COMPANIES, type Company } from '../../data/empresas';
 import { mapProductName } from '../../config/product-mapping';
 
@@ -33,7 +33,7 @@ import { mapProductName } from '../../config/product-mapping';
 })
 export class orcamentos {
   private excelComparativo = inject(ExcelComparativoService);
-  private excelGenerator = inject(ExcelGeneratorService);
+  private excelGeneratorFactory = inject(ExcelGeneratorFactory);
   private excelImporter = inject(ExcelImporterService);
   private changeDetector = inject(ChangeDetectorRef);
   private readonly importedBaseCompanyId = 'Laguna';
@@ -451,7 +451,7 @@ export class orcamentos {
 
   async downloadQuote(quote: Quote) {
     try {
-      await this.excelGenerator.generateQuoteExcel({
+      await this.excelGeneratorFactory.generateQuoteExcel({
         ...quote,
         deliveryTime: quote.deliveryTime || this.deliveryTime,
         paymentMethod: quote.paymentMethod || this.paymentMethod
