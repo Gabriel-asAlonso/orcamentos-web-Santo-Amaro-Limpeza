@@ -192,22 +192,29 @@ export class ExcelGeneratorSplashService {
       linha.commit();
     });
 
-    // Limpar linhas após os produtos para evitar duplicação
+    // Encontrar a linha do total original (assume que é a linha 29 ou próxima após os produtos)
+    const linhaTotal = 29;
     const lastProductRow = linhaInicial + quantidadeProdutos;
+    const linhasEntreProdutosETotal = linhaTotal - lastProductRow - 1;
 
-    // Remover conteúdo das linhas vazias após os produtos até linha 28 (antes do total)
-    for (let row = lastProductRow + 1; row < 29; row++) {
-      const emptyRow = worksheet.getRow(row);
-      for (let col = 1; col <= 12; col++) {
-        emptyRow.getCell(col).value = null;
-      }
+    // Remover linhas entre o último produto e o total se houver muitas
+    if (linhasEntreProdutosETotal > 0) {
+      worksheet.spliceRows(lastProductRow + 1, linhasEntreProdutosETotal);
+    }
+
+    // Adicionar linhas em branco se necessário (para separação visual)
+    const linhasMinimas = 0; // Sem linhas em branco entre produtos e total
+    const linhasParaAjustar = linhasMinimas - linhasEntreProdutosETotal;
+    if (linhasParaAjustar > 0) {
+      worksheet.spliceRows(lastProductRow + 1, 0, ...Array.from({ length: linhasParaAjustar }, () => []));
     }
 
     // Colocar total apenas em L29 (célula fixa)
-    worksheet.getCell('L29').value = total;
-    worksheet.getCell('L29').font = { size: 9, bold: false };
-    worksheet.getCell('L29').numFmt = 'R$ #,##0.00';
-    worksheet.getCell('L29').alignment = { horizontal: 'left', vertical: 'middle' };
+    const totalRowActual = linhaInicial + quantidadeProdutos + 1;
+    worksheet.getCell(totalRowActual, 12).value = total;
+    worksheet.getCell(totalRowActual, 12).font = { size: 9, bold: false };
+    worksheet.getCell(totalRowActual, 12).numFmt = 'R$ #,##0.00';
+    worksheet.getCell(totalRowActual, 12).alignment = { horizontal: 'left', vertical: 'middle' };
   }
 
   private copyCellStyle(source: ExcelJS.Cell, target: ExcelJS.Cell) {
