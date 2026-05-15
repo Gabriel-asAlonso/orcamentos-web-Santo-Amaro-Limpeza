@@ -124,6 +124,12 @@ export class ExcelGeneratorSplashService {
 
   private fillProducts(worksheet: ExcelJS.Worksheet, items: QuoteItem[]) {
     const linhaInicial = 22;
+    const linhaTotalOriginal = this.findTotalRow(worksheet) ?? 27;
+    const quantidadeProdutos = items.length;
+    const quantidadeLinhasModelo = Math.max(linhaTotalOriginal - linhaInicial, 1);
+    const linhasParaRemover = Math.max(quantidadeLinhasModelo - quantidadeProdutos, 0);
+    const linhasParaAdicionar = Math.max(quantidadeProdutos - quantidadeLinhasModelo, 0);
+
     const linhaModelo = worksheet.getRow(linhaInicial);
 
     // Calcular total
@@ -134,7 +140,25 @@ export class ExcelGeneratorSplashService {
       return sum + totalComDesconto;
     }, 0);
 
-    // Preencher produtos (máximo de 4 linhas: 22, 23, 24, 25)
+    // Inserir linhas antes do total (empurra a linha TOTAL GERAL para baixo,
+    // preservando seu estilo do template automaticamente)
+    if (linhasParaAdicionar > 0) {
+      worksheet.spliceRows(
+        linhaTotalOriginal,
+        0,
+        ...Array.from({ length: linhasParaAdicionar }, () => [])
+      );
+    }
+
+    // Remover linhas modelo excedentes (puxa a linha TOTAL GERAL para cima)
+    if (linhasParaRemover > 0) {
+      worksheet.spliceRows(linhaInicial + quantidadeProdutos, linhasParaRemover);
+    }
+
+    // O total agora fica sempre logo abaixo do último produto
+    const linhaTotal = linhaInicial + quantidadeProdutos;
+
+    // Preencher produtos
     items.forEach((item, index) => {
       const rowNumber = linhaInicial + index;
       const linha = worksheet.getRow(rowNumber);
@@ -176,11 +200,27 @@ export class ExcelGeneratorSplashService {
       linha.commit();
     });
 
-    // Preencher total na linha 27, coluna L
-    const totalRow = worksheet.getRow(27);
+    // Preencher o valor do total na linha que se moveu junto com o template
+    const totalRow = worksheet.getRow(linhaTotal);
     totalRow.getCell(12).value = total;
     totalRow.getCell(12).numFmt = 'R$ #,##0.00';
     totalRow.commit();
+  }
+
+  private findTotalRow(worksheet: ExcelJS.Worksheet) {
+    for (let rowNumber = 1; rowNumber <= worksheet.rowCount; rowNumber++) {
+      const row = worksheet.getRow(rowNumber);
+
+      for (let colNumber = 1; colNumber <= 12; colNumber++) {
+        const value = String(row.getCell(colNumber).value ?? '').trim().toLowerCase();
+
+        if (value.includes('total geral')) {
+          return rowNumber;
+        }
+      }
+    }
+
+    return undefined;
   }
 
   private copyCellStyle(source: ExcelJS.Cell, target: ExcelJS.Cell) {
