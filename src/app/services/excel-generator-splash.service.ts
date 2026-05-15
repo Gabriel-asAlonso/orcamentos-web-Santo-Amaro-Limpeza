@@ -27,22 +27,97 @@ export class ExcelGeneratorSplashService {
       throw new Error('Aba da planilha não encontrada');
     }
 
-    this.prepareWorksheet(worksheet);
+    this.clearWorksheetRowGrouping(worksheet);
     await this.insertCompanyLogo(workbook, worksheet, quote.company.logoPath);
 
-    const companyDocument = quote.company.cnpj || quote.company.taxId || '';
-    const companyAddress = quote.company.address || '';
     const customer = quote.customerData;
+    const quoteDate = quote.date ? new Date(quote.date) : new Date();
 
-    // Logo position: A4:B5 (as specified)
-    // Company name: A2:F3 (as specified)
-    this.safeMergeCells(worksheet, 'A2:F3');
-    worksheet.getCell('A2').value = quote.company.name;
-    worksheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
-    worksheet.getCell('A2').font = { bold: true, size: 11 };
+    // Data (canto superior direito)
+    worksheet.getCell('K2').value = `Data: ${quoteDate.toLocaleDateString('pt-BR')}`;
+    worksheet.getCell('K2').font = { bold: true, size: 10 };
+    worksheet.getCell('K2').alignment = { horizontal: 'right', vertical: 'middle' };
 
-    // Aplicar dados do cliente
-    this.fillCustomerData(worksheet, customer, companyDocument, companyAddress, quote);
+    // Prazo de entrega (row 4, entre colunas C-D)
+    worksheet.getCell('C4').value = 'Prazo:';
+    worksheet.getCell('D4').value = `ATÉ ${quote.deliveryTime.toUpperCase()}`;
+
+    // Forma de pagamento (row 5, entre colunas C-D)
+    worksheet.getCell('C5').value = 'Pagamento:';
+    worksheet.getCell('D5').value = quote.paymentMethod.toUpperCase();
+
+    // ===== DADOS DO CLIENTE (Row 7+) =====
+    if (customer) {
+      // Row 7: Cliente
+      worksheet.getCell('A7').value = 'Cliente:';
+      worksheet.getCell('B7').value = customer.client ?? '';
+      worksheet.getCell('G7').value = 'Fantasia:';
+
+      // Row 8: Fantasia
+      worksheet.getCell('A8').value = 'Fantasia:';
+      worksheet.getCell('B8').value = customer.fantasyName ?? customer.client ?? '';
+      worksheet.getCell('G8').value = 'Bairro:';
+      worksheet.getCell('I8').value = customer.district ?? '';
+
+      // Row 9: Endereço
+      worksheet.getCell('A9').value = 'Endereço:';
+      worksheet.getCell('B9').value = customer.address ?? '';
+      worksheet.getCell('G9').value = 'UF / CEP:';
+      worksheet.getCell('I9').value = `${customer.state ?? ''} / ${customer.postalCode ?? ''}`;
+
+      // Row 10: Bairro (segunda menção)
+      worksheet.getCell('A10').value = 'Bairro:';
+      worksheet.getCell('B10').value = customer.district ?? '';
+      worksheet.getCell('G10').value = 'Insc. Est.:';
+      worksheet.getCell('I10').value = customer.stateRegistration ?? '';
+
+      // Row 11: Cidade
+      worksheet.getCell('A11').value = 'Cidade:';
+      worksheet.getCell('B11').value = customer.city ?? '';
+      worksheet.getCell('G11').value = 'Tel e fone / WhatsApp:';
+      worksheet.getCell('I11').value = customer.phone ?? '';
+
+      // Row 12: CEP
+      worksheet.getCell('A12').value = 'CEP:';
+      worksheet.getCell('B12').value = customer.postalCode ?? '';
+      worksheet.getCell('G12').value = 'Região:';
+      worksheet.getCell('I12').value = customer.region ?? '';
+
+      // Row 13: CNPJ/CPF
+      worksheet.getCell('A13').value = 'CNPJ/CPF:';
+      worksheet.getCell('B13').value = customer.document ?? '';
+      worksheet.getCell('G13').value = 'Insc. Est.:';
+      worksheet.getCell('I13').value = customer.stateRegistration ?? '';
+
+      // Row 14: Fone
+      worksheet.getCell('A14').value = 'Fone:';
+      worksheet.getCell('B14').value = customer.phone ?? '';
+      worksheet.getCell('G14').value = 'WhatsApp:';
+      worksheet.getCell('I14').value = customer.whatsapp ?? '';
+
+      // Row 15: CONDIÇÕES DE ENTREGA (header)
+      // Esta é uma seção de header que deve estar no template
+
+      // Row 16: Email e Forma de pagamento
+      worksheet.getCell('A16').value = 'Email:';
+      worksheet.getCell('B16').value = customer.email ?? '';
+      worksheet.getCell('G16').value = 'Forma de pagamento:';
+      worksheet.getCell('I16').value = quote.paymentMethod;
+
+      // Row 17: Região e Tabela de preço
+      worksheet.getCell('A17').value = 'Região:';
+      worksheet.getCell('B17').value = customer.region ?? '';
+      worksheet.getCell('G17').value = 'Tabela Preço:';
+      worksheet.getCell('I17').value = customer.priceTable ?? '';
+
+      // Row 18: Vendedor
+      worksheet.getCell('A18').value = 'Vendedor:';
+      worksheet.getCell('B18').value = customer.salesperson ?? '';
+      worksheet.getCell('G18').value = 'Ven. Externo:';
+      worksheet.getCell('I18').value = customer.externalSalesperson ?? '';
+    }
+
+    // ===== PRODUTOS (Row 20+) =====
     this.fillProducts(worksheet, quote.items);
 
     const arquivo = await workbook.xlsx.writeBuffer();
@@ -53,111 +128,8 @@ export class ExcelGeneratorSplashService {
     );
   }
 
-  private prepareWorksheet(worksheet: ExcelJS.Worksheet) {
-    // Limpar agrupamento e imagens
-    this.clearWorksheetRowGrouping(worksheet);
-    this.clearWorksheetImages(worksheet);
-
-    // Ajustar largura das colunas
-    worksheet.getColumn(1).width = 12;
-    worksheet.getColumn(2).width = 14;
-    worksheet.getColumn(3).width = 18;
-    worksheet.getColumn(4).width = 12;
-    worksheet.getColumn(5).width = 12;
-    worksheet.getColumn(6).width = 12;
-    worksheet.getColumn(7).width = 14;
-    worksheet.getColumn(8).width = 10;
-    worksheet.getColumn(9).width = 10;
-    worksheet.getColumn(10).width = 12;
-    worksheet.getColumn(11).width = 12;
-    worksheet.getColumn(12).width = 14;
-  }
-
-  private fillCustomerData(
-    worksheet: ExcelJS.Worksheet,
-    customer: any,
-    companyDocument: string,
-    companyAddress: string,
-    quote: Quote
-  ) {
-    // Os campos devem ser preenchidos conforme nomeados no modelo
-    // Ajuste as células conforme necessário
-
-    if (customer) {
-      worksheet.getCell('A7').value = 'Cliente:';
-      worksheet.getCell('B7').value = customer.client ?? '';
-
-      worksheet.getCell('A8').value = 'Fantasia:';
-      worksheet.getCell('B8').value = customer.fantasyName ?? customer.client ?? '';
-
-      worksheet.getCell('A9').value = 'Endereço:';
-      worksheet.getCell('B9').value = customer.address ?? '';
-
-      worksheet.getCell('A10').value = 'Bairro:';
-      worksheet.getCell('B10').value = customer.district ?? '';
-
-      worksheet.getCell('A11').value = 'Cidade:';
-      worksheet.getCell('B11').value = customer.city ?? '';
-
-      worksheet.getCell('E11').value = 'UF:';
-      worksheet.getCell('F11').value = customer.state ?? '';
-
-      worksheet.getCell('A12').value = 'CEP:';
-      worksheet.getCell('B12').value = customer.postalCode ?? '';
-
-      worksheet.getCell('A13').value = 'CNPJ/CPF:';
-      worksheet.getCell('B13').value = customer.document ?? '';
-
-      worksheet.getCell('E13').value = 'Insc. Est.:';
-      worksheet.getCell('F13').value = customer.stateRegistration ?? '';
-
-      worksheet.getCell('A14').value = 'Fone:';
-      worksheet.getCell('B14').value = customer.phone ?? '';
-
-      worksheet.getCell('E14').value = 'WhatsApp:';
-      worksheet.getCell('F14').value = customer.whatsapp ?? '';
-
-      worksheet.getCell('A15').value = 'Contato:';
-      worksheet.getCell('B15').value = customer.contact ?? '';
-
-      worksheet.getCell('A16').value = 'Email:';
-      worksheet.getCell('B16').value = customer.email ?? '';
-
-      worksheet.getCell('A17').value = 'Região:';
-      worksheet.getCell('B17').value = customer.region ?? '';
-
-      worksheet.getCell('E17').value = 'Tabela Preço:';
-      worksheet.getCell('F17').value = customer.priceTable ?? '';
-
-      worksheet.getCell('A18').value = 'Vendedor:';
-      worksheet.getCell('B18').value = customer.salesperson ?? '';
-
-      worksheet.getCell('E18').value = 'Ven. Externo:';
-      worksheet.getCell('F18').value = customer.externalSalesperson ?? '';
-    }
-
-    // Data do orçamento
-    const quoteDate = quote.date ? new Date(quote.date) : new Date();
-    const dateCell = worksheet.getCell('G2');
-    dateCell.value = `Data: ${quoteDate.toLocaleDateString('pt-BR')}`;
-    dateCell.alignment = { horizontal: 'right', vertical: 'middle' };
-    dateCell.font = { bold: true, size: 10 };
-
-    // Prazo de entrega
-    const deliveryCell = worksheet.getCell('G4');
-    deliveryCell.value = `Prazo: ${quote.deliveryTime}`;
-    deliveryCell.alignment = { horizontal: 'right', vertical: 'middle' };
-    deliveryCell.font = { bold: false, size: 9 };
-
-    // Forma de pagamento
-    const paymentCell = worksheet.getCell('G5');
-    paymentCell.value = `Pagamento: ${quote.paymentMethod}`;
-    paymentCell.alignment = { horizontal: 'right', vertical: 'middle' };
-    paymentCell.font = { bold: false, size: 9 };
-  }
-
   private fillProducts(worksheet: ExcelJS.Worksheet, items: QuoteItem[]) {
-    const linhaInicial = 20;
+    const linhaInicial = 22;
     const quantidadeProdutos = items.length;
 
     // Calcular total
@@ -177,15 +149,15 @@ export class ExcelGeneratorSplashService {
 
       linha.height = 20;
 
-      // Preencher células
-      linha.getCell(1).value = item.code ?? index + 1;
-      linha.getCell(2).value = item.reference ?? '';
-      linha.getCell(3).value = item.product;
-      linha.getCell(4).value = item.quantity;
-      linha.getCell(5).value = item.unit;
-      linha.getCell(6).value = item.unitPrice;
-      linha.getCell(7).value = discount / 100;
-      linha.getCell(8).value = totalProduto;
+      // Colunas conforme template: A, B, C, D, E, F, G, H
+      linha.getCell(1).value = item.code ?? index + 1; // A - Código
+      linha.getCell(2).value = item.reference ?? ''; // B - Referência
+      linha.getCell(3).value = item.product; // C - Descrição/Produto
+      linha.getCell(4).value = item.quantity; // D - Qtd
+      linha.getCell(5).value = item.unit; // E - Unidade
+      linha.getCell(6).value = item.unitPrice; // F - Unitário
+      linha.getCell(7).value = discount / 100; // G - Desconto %
+      linha.getCell(8).value = totalProduto; // H - Total
 
       // Formatação
       linha.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
@@ -197,14 +169,10 @@ export class ExcelGeneratorSplashService {
       linha.getCell(7).alignment = { horizontal: 'center', vertical: 'middle' };
       linha.getCell(8).alignment = { horizontal: 'right', vertical: 'middle' };
 
-      linha.getCell(1).font = { size: 9 };
-      linha.getCell(2).font = { size: 9 };
-      linha.getCell(3).font = { size: 9 };
-      linha.getCell(4).font = { size: 9 };
-      linha.getCell(5).font = { size: 9 };
-      linha.getCell(6).font = { size: 9 };
-      linha.getCell(7).font = { size: 9 };
-      linha.getCell(8).font = { size: 9 };
+      // Fontes
+      for (let col = 1; col <= 8; col++) {
+        linha.getCell(col).font = { size: 9 };
+      }
 
       // Formatação numérica
       linha.getCell(6).numFmt = 'R$ #,##0.00';
@@ -215,7 +183,7 @@ export class ExcelGeneratorSplashService {
     });
 
     // Linha de total
-    const linhaTotal = linhaInicial + quantidadeProdutos;
+    const linhaTotal = linhaInicial + quantidadeProdutos + 1;
     const totalRow = worksheet.getRow(linhaTotal);
     totalRow.height = 24;
 
@@ -229,10 +197,6 @@ export class ExcelGeneratorSplashService {
     totalRow.getCell(8).alignment = { horizontal: 'right', vertical: 'middle' };
 
     totalRow.commit();
-  }
-
-  private clearWorksheetImages(worksheet: ExcelJS.Worksheet) {
-    (worksheet as any).drawing = null;
   }
 
   private clearWorksheetRowGrouping(worksheet: ExcelJS.Worksheet) {
@@ -254,18 +218,10 @@ export class ExcelGeneratorSplashService {
         extension: 'png'
       });
 
-      // Logo posicionada em A4:B5
-      worksheet.addImage(logoImage, 'A4:B5');
+      // Logo será inserida onde o template indicar
+      // O template já tem placeholder para logo
     } catch {
       // Logo não encontrada, continuar sem ela
-    }
-  }
-
-  private safeMergeCells(worksheet: ExcelJS.Worksheet, range: string) {
-    try {
-      worksheet.mergeCells(range);
-    } catch {
-      // Célula já foi mesclada ou range inválido
     }
   }
 }
