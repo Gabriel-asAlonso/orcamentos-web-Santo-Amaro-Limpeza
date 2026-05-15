@@ -145,19 +145,10 @@ export class ExcelGeneratorSplashService {
       linha.getCell(10).value = item.unitPrice; // J22+ - Vl. Unit.
       linha.getCell(12).value = totalProduto; // L22+ - Vl. Total
 
-      // Formatação
-      linha.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
-      linha.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' };
-      linha.getCell(3).alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
-      linha.getCell(7).alignment = { horizontal: 'center', vertical: 'middle' };
-      linha.getCell(8).alignment = { horizontal: 'center', vertical: 'middle' };
-      linha.getCell(9).alignment = { horizontal: 'center', vertical: 'middle' };
-      linha.getCell(10).alignment = { horizontal: 'right', vertical: 'middle' };
-      linha.getCell(12).alignment = { horizontal: 'right', vertical: 'middle' };
-
-      // Fontes
+      // Formatação - tudo alinhado à esquerda e sem negrito
       for (let col of [1, 2, 3, 7, 8, 9, 10, 12]) {
-        linha.getCell(col).font = { size: 9 };
+        linha.getCell(col).alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
+        linha.getCell(col).font = { size: 9, bold: false };
       }
 
       // Formatação numérica
@@ -174,13 +165,13 @@ export class ExcelGeneratorSplashService {
     totalRow.height = 24;
 
     totalRow.getCell(1).value = 'TOTAL:';
-    totalRow.getCell(1).font = { bold: true, size: 11 };
-    totalRow.getCell(1).alignment = { horizontal: 'right', vertical: 'middle' };
+    totalRow.getCell(1).font = { bold: false, size: 9 };
+    totalRow.getCell(1).alignment = { horizontal: 'left', vertical: 'middle' };
 
     totalRow.getCell(12).value = total;
-    totalRow.getCell(12).font = { bold: true, size: 11 };
+    totalRow.getCell(12).font = { bold: false, size: 9 };
     totalRow.getCell(12).numFmt = 'R$ #,##0.00';
-    totalRow.getCell(12).alignment = { horizontal: 'right', vertical: 'middle' };
+    totalRow.getCell(12).alignment = { horizontal: 'left', vertical: 'middle' };
 
     totalRow.commit();
   }
@@ -204,7 +195,11 @@ export class ExcelGeneratorSplashService {
         extension: 'png'
       });
 
-      // Logo será inserida onde o template indicar
+      // Logo em A4:B5 - centralizada e tamanho pequeno
+      worksheet.addImage(logoImage, {
+        tl: { col: 0, row: 3 }, // A4 (col 0 = A, row 3 = row 4)
+        ext: { width: 80, height: 60 } // Tamanho reduzido
+      });
     } catch {
       // Logo não encontrada, continuar sem ela
     }
