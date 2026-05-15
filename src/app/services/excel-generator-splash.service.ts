@@ -28,6 +28,15 @@ export class ExcelGeneratorSplashService {
     }
 
     this.clearWorksheetRowGrouping(worksheet);
+
+    // Ajustar altura das linhas para logo maior
+    worksheet.getRow(4).height = 60;
+    worksheet.getRow(5).height = 60;
+
+    // Ajustar largura das colunas para logo
+    worksheet.getColumn('A').width = 15;
+    worksheet.getColumn('B').width = 15;
+
     await this.insertCompanyLogo(workbook, worksheet, quote.company.logoPath);
 
     const customer = quote.customerData;
@@ -195,11 +204,8 @@ export class ExcelGeneratorSplashService {
         extension: 'png'
       });
 
-      // Logo em A4:B5 - centralizada e tamanho pequeno
-      worksheet.addImage(logoImage, {
-        tl: { col: 0, row: 3 }, // A4 (col 0 = A, row 3 = row 4)
-        ext: { width: 80, height: 60 } // Tamanho reduzido
-      });
+      // Logo em A4:B5 - maior e centralizada
+      worksheet.addImage(logoImage, 'A4:B5');
     } catch {
       // Logo não encontrada, continuar sem ela
     }
