@@ -34,7 +34,7 @@ export class ExcelGeneratorSplashService {
     worksheet.getRow(5).height = 45;
 
     // Ajustar largura das colunas para logo
-    worksheet.getColumn('A').width = 12;
+    worksheet.getColumn('A').width = 20;
     worksheet.getColumn('B').width = 12;
 
     await this.insertCompanyLogo(workbook, worksheet, quote.company.logoPath);
@@ -168,11 +168,7 @@ export class ExcelGeneratorSplashService {
       linha.commit();
     });
 
-    // Colocar total apenas em L29 (linha 29, coluna L)
-    worksheet.getCell('L29').value = total;
-    worksheet.getCell('L29').font = { size: 9, bold: false };
-    worksheet.getCell('L29').numFmt = 'R$ #,##0.00';
-    worksheet.getCell('L29').alignment = { horizontal: 'left', vertical: 'middle' };
+
   }
 
   private clearWorksheetRowGrouping(worksheet: ExcelJS.Worksheet) {
