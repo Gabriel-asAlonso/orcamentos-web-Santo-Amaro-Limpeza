@@ -168,21 +168,11 @@ export class ExcelGeneratorSplashService {
       linha.commit();
     });
 
-    // Linha de total
-    const linhaTotal = linhaInicial + quantidadeProdutos + 1;
-    const totalRow = worksheet.getRow(linhaTotal);
-    totalRow.height = 24;
-
-    totalRow.getCell(1).value = 'TOTAL:';
-    totalRow.getCell(1).font = { bold: false, size: 9 };
-    totalRow.getCell(1).alignment = { horizontal: 'left', vertical: 'middle' };
-
-    totalRow.getCell(12).value = total;
-    totalRow.getCell(12).font = { bold: false, size: 9 };
-    totalRow.getCell(12).numFmt = 'R$ #,##0.00';
-    totalRow.getCell(12).alignment = { horizontal: 'left', vertical: 'middle' };
-
-    totalRow.commit();
+    // Colocar total apenas em L29 (linha 29, coluna L)
+    worksheet.getCell('L29').value = total;
+    worksheet.getCell('L29').font = { size: 9, bold: false };
+    worksheet.getCell('L29').numFmt = 'R$ #,##0.00';
+    worksheet.getCell('L29').alignment = { horizontal: 'left', vertical: 'middle' };
   }
 
   private clearWorksheetRowGrouping(worksheet: ExcelJS.Worksheet) {
