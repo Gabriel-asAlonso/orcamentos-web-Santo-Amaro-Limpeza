@@ -192,29 +192,22 @@ export class ExcelGeneratorSplashService {
       linha.commit();
     });
 
-    // Encontrar a linha do total original (assume que é a linha 29 ou próxima após os produtos)
-    const linhaTotal = 29;
-    const lastProductRow = linhaInicial + quantidadeProdutos;
-    const linhasEntreProdutosETotal = linhaTotal - lastProductRow - 1;
+    // Colocar total na linha imediatamente após o último produto
+    const linhaTotal = linhaInicial + quantidadeProdutos + 1;
+    const totalRow = worksheet.getRow(linhaTotal);
 
-    // Remover linhas entre o último produto e o total se houver muitas
-    if (linhasEntreProdutosETotal > 0) {
-      worksheet.spliceRows(lastProductRow + 1, linhasEntreProdutosETotal);
+    // Limpar todas as células da linha de total
+    for (let col = 1; col <= 12; col++) {
+      totalRow.getCell(col).value = null;
     }
 
-    // Adicionar linhas em branco se necessário (para separação visual)
-    const linhasMinimas = 0; // Sem linhas em branco entre produtos e total
-    const linhasParaAjustar = linhasMinimas - linhasEntreProdutosETotal;
-    if (linhasParaAjustar > 0) {
-      worksheet.spliceRows(lastProductRow + 1, 0, ...Array.from({ length: linhasParaAjustar }, () => []));
-    }
+    // Preencher apenas o total em L (coluna 12)
+    totalRow.getCell(12).value = total;
+    totalRow.getCell(12).font = { size: 9, bold: false };
+    totalRow.getCell(12).numFmt = 'R$ #,##0.00';
+    totalRow.getCell(12).alignment = { horizontal: 'left', vertical: 'middle' };
 
-    // Colocar total apenas em L29 (célula fixa)
-    const totalRowActual = linhaInicial + quantidadeProdutos + 1;
-    worksheet.getCell(totalRowActual, 12).value = total;
-    worksheet.getCell(totalRowActual, 12).font = { size: 9, bold: false };
-    worksheet.getCell(totalRowActual, 12).numFmt = 'R$ #,##0.00';
-    worksheet.getCell(totalRowActual, 12).alignment = { horizontal: 'left', vertical: 'middle' };
+    totalRow.commit();
   }
 
   private copyCellStyle(source: ExcelJS.Cell, target: ExcelJS.Cell) {
