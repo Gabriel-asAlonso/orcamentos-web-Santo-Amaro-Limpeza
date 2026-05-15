@@ -124,8 +124,7 @@ export class ExcelGeneratorSplashService {
 
   private fillProducts(worksheet: ExcelJS.Worksheet, items: QuoteItem[]) {
     const linhaInicial = 22;
-    const quantidadeProdutos = items.length;
-    const linhasModelo = 1; // Uma linha modelo (row 22)
+    const linhaModelo = worksheet.getRow(linhaInicial);
 
     // Calcular total
     const total = items.reduce((sum, item) => {
@@ -135,22 +134,7 @@ export class ExcelGeneratorSplashService {
       return sum + totalComDesconto;
     }, 0);
 
-    // Calcular linhas a adicionar/remover
-    const linhasParaAdicionar = Math.max(quantidadeProdutos - linhasModelo, 0);
-    const linhasParaRemover = Math.max(linhasModelo - quantidadeProdutos, 0);
-    const linhaModelo = worksheet.getRow(linhaInicial);
-
-    // Adicionar linhas se necessário
-    if (linhasParaAdicionar > 0) {
-      worksheet.spliceRows(linhaInicial + linhasModelo, 0, ...Array.from({ length: linhasParaAdicionar }, () => []));
-    }
-
-    // Remover linhas se necessário
-    if (linhasParaRemover > 0) {
-      worksheet.spliceRows(linhaInicial + quantidadeProdutos, linhasParaRemover);
-    }
-
-    // Preencher produtos
+    // Preencher produtos (máximo de 4 linhas: 22, 23, 24, 25)
     items.forEach((item, index) => {
       const rowNumber = linhaInicial + index;
       const linha = worksheet.getRow(rowNumber);
@@ -192,15 +176,10 @@ export class ExcelGeneratorSplashService {
       linha.commit();
     });
 
-    // Colocar total na linha imediatamente após o último produto
-    const linhaTotal = linhaInicial + quantidadeProdutos + 1;
-    const totalRow = worksheet.getRow(linhaTotal);
-
-    // Preencher apenas o total em L (coluna 12)
+    // Preencher total na linha 27, coluna L
+    const totalRow = worksheet.getRow(27);
     totalRow.getCell(12).value = total;
     totalRow.getCell(12).numFmt = 'R$ #,##0.00';
-    totalRow.getCell(12).alignment = { horizontal: 'left', vertical: 'middle' };
-
     totalRow.commit();
   }
 
