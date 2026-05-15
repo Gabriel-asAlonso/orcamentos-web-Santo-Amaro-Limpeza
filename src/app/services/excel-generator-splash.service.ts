@@ -196,29 +196,12 @@ export class ExcelGeneratorSplashService {
     const linhaTotal = linhaInicial + quantidadeProdutos + 1;
     const totalRow = worksheet.getRow(linhaTotal);
 
-    // Limpar TODAS as células da linha de total (A até Z para remover qualquer conteúdo do template)
-    for (let col = 1; col <= 26; col++) {
-      const cell = totalRow.getCell(col);
-      cell.value = null;
-      cell.border = undefined as any;
-      cell.fill = undefined as any;
-      cell.font = { size: 9, bold: false };
-    }
-
     // Preencher apenas o total em L (coluna 12)
     totalRow.getCell(12).value = total;
     totalRow.getCell(12).numFmt = 'R$ #,##0.00';
     totalRow.getCell(12).alignment = { horizontal: 'left', vertical: 'middle' };
 
     totalRow.commit();
-
-    // Limpar todas as linhas após o total para evitar conteúdo duplicado do template
-    for (let row = linhaTotal + 1; row <= 100; row++) {
-      const emptyRow = worksheet.getRow(row);
-      for (let col = 1; col <= 26; col++) {
-        emptyRow.getCell(col).value = null;
-      }
-    }
   }
 
   private copyCellStyle(source: ExcelJS.Cell, target: ExcelJS.Cell) {
