@@ -31,93 +31,78 @@ export class ExcelGeneratorSplashService {
     await this.insertCompanyLogo(workbook, worksheet, quote.company.logoPath);
 
     const customer = quote.customerData;
+    const companyDocument = quote.company.cnpj || quote.company.taxId || '';
     const quoteDate = quote.date ? new Date(quote.date) : new Date();
 
-    // Data (canto superior direito)
-    worksheet.getCell('K2').value = `Data: ${quoteDate.toLocaleDateString('pt-BR')}`;
-    worksheet.getCell('K2').font = { bold: true, size: 10 };
-    worksheet.getCell('K2').alignment = { horizontal: 'right', vertical: 'middle' };
+    // ===== CABEÇALHO (Rows 3-4) =====
+    // Data: G3 (título), H3 (dado)
+    worksheet.getCell('H3').value = quoteDate.toLocaleDateString('pt-BR');
+    worksheet.getCell('H3').font = { size: 9 };
 
-    // Prazo de entrega (row 4, entre colunas C-D)
-    worksheet.getCell('C4').value = 'Prazo:';
-    worksheet.getCell('D4').value = `ATÉ ${quote.deliveryTime.toUpperCase()}`;
+    // CNPJ da empresa: G4 (título), H4 (dado)
+    worksheet.getCell('H4').value = companyDocument;
+    worksheet.getCell('H4').font = { size: 9 };
 
-    // Forma de pagamento (row 5, entre colunas C-D)
-    worksheet.getCell('C5').value = 'Pagamento:';
-    worksheet.getCell('D5').value = quote.paymentMethod.toUpperCase();
-
-    // ===== DADOS DO CLIENTE (Row 7+) =====
+    // ===== DADOS DO CLIENTE LADO ESQUERDO (Rows 7-12) =====
     if (customer) {
-      // Row 7: Cliente
-      worksheet.getCell('A7').value = 'Cliente:';
+      // Row 7: Cliente - A7 (título), B7 (dado)
       worksheet.getCell('B7').value = customer.client ?? '';
-      worksheet.getCell('G7').value = 'Fantasia:';
 
-      // Row 8: Fantasia
-      worksheet.getCell('A8').value = 'Fantasia:';
-      worksheet.getCell('B8').value = customer.fantasyName ?? customer.client ?? '';
-      worksheet.getCell('G8').value = 'Bairro:';
+      // Row 8: Endereço - A8 (título), B8 (dado)
+      worksheet.getCell('B8').value = customer.address ?? '';
+
+      // Row 9: Cidade - A9 (título), B9 (dado)
+      worksheet.getCell('B9').value = customer.city ?? '';
+
+      // Row 10: CNPJ/CPF - A10 (título), B10 (dado)
+      worksheet.getCell('B10').value = customer.document ?? '';
+
+      // Row 11: Contato - A11 (título), B11 (dado)
+      worksheet.getCell('B11').value = customer.contact ?? '';
+
+      // Row 12: Email - A12 (título), B12 (dado)
+      worksheet.getCell('B12').value = customer.email ?? '';
+
+      // ===== DADOS DO CLIENTE LADO DIREITO (Rows 7-12) =====
+      // Row 7: Fantasia - G7 (título), I7 (dado)
+      worksheet.getCell('I7').value = customer.fantasyName ?? customer.client ?? '';
+
+      // Row 8: Bairro - G8 (título), I8 (dado)
       worksheet.getCell('I8').value = customer.district ?? '';
 
-      // Row 9: Endereço
-      worksheet.getCell('A9').value = 'Endereço:';
-      worksheet.getCell('B9').value = customer.address ?? '';
-      worksheet.getCell('G9').value = 'UF / CEP:';
+      // Row 9: UF / CEP - G9 (título), I9 (dado)
       worksheet.getCell('I9').value = `${customer.state ?? ''} / ${customer.postalCode ?? ''}`;
 
-      // Row 10: Bairro (segunda menção)
-      worksheet.getCell('A10').value = 'Bairro:';
-      worksheet.getCell('B10').value = customer.district ?? '';
-      worksheet.getCell('G10').value = 'Insc. Est.:';
+      // Row 10: Inscr. Est. - G10 (título), I10 (dado)
       worksheet.getCell('I10').value = customer.stateRegistration ?? '';
 
-      // Row 11: Cidade
-      worksheet.getCell('A11').value = 'Cidade:';
-      worksheet.getCell('B11').value = customer.city ?? '';
-      worksheet.getCell('G11').value = 'Tel e fone / WhatsApp:';
+      // Row 11: Telefone / WhatsApp - G11 (título), I11 (dado)
       worksheet.getCell('I11').value = customer.phone ?? '';
 
-      // Row 12: CEP
-      worksheet.getCell('A12').value = 'CEP:';
-      worksheet.getCell('B12').value = customer.postalCode ?? '';
-      worksheet.getCell('G12').value = 'Região:';
+      // Row 12: Região - G12 (título), I12 (dado)
       worksheet.getCell('I12').value = customer.region ?? '';
 
-      // Row 13: CNPJ/CPF
-      worksheet.getCell('A13').value = 'CNPJ/CPF:';
-      worksheet.getCell('B13').value = customer.document ?? '';
-      worksheet.getCell('G13').value = 'Insc. Est.:';
-      worksheet.getCell('I13').value = customer.stateRegistration ?? '';
+      // ===== INFORMAÇÕES ADICIONAIS (Rows 16-18) =====
+      // Row 16: Frete - A16 (título), B16 (dado)
+      worksheet.getCell('B16').value = customer.freight ?? '';
 
-      // Row 14: Fone
-      worksheet.getCell('A14').value = 'Fone:';
-      worksheet.getCell('B14').value = customer.phone ?? '';
-      worksheet.getCell('G14').value = 'WhatsApp:';
-      worksheet.getCell('I14').value = customer.whatsapp ?? '';
+      // Row 16: Forma de pagamento - E16 (título), G16 (dado)
+      worksheet.getCell('G16').value = quote.paymentMethod;
 
-      // Row 15: CONDIÇÕES DE ENTREGA (header)
-      // Esta é uma seção de header que deve estar no template
+      // Row 17: Tabela de preço - A17 (título), B17 (dado)
+      worksheet.getCell('B17').value = customer.priceTable ?? '';
 
-      // Row 16: Email e Forma de pagamento
-      worksheet.getCell('A16').value = 'Email:';
-      worksheet.getCell('B16').value = customer.email ?? '';
-      worksheet.getCell('G16').value = 'Forma de pagamento:';
-      worksheet.getCell('I16').value = quote.paymentMethod;
+      // Row 17: Vendedor - E17 (título), G17 (dado)
+      worksheet.getCell('G17').value = customer.salesperson ?? '';
 
-      // Row 17: Região e Tabela de preço
-      worksheet.getCell('A17').value = 'Região:';
-      worksheet.getCell('B17').value = customer.region ?? '';
-      worksheet.getCell('G17').value = 'Tabela Preço:';
-      worksheet.getCell('I17').value = customer.priceTable ?? '';
+      // Row 18: Vendedor externo - A18 (título), B18 (dado)
+      worksheet.getCell('B18').value = customer.externalSalesperson ?? '';
 
-      // Row 18: Vendedor
-      worksheet.getCell('A18').value = 'Vendedor:';
-      worksheet.getCell('B18').value = customer.salesperson ?? '';
-      worksheet.getCell('G18').value = 'Ven. Externo:';
-      worksheet.getCell('I18').value = customer.externalSalesperson ?? '';
+      // Row 18: Observação - E18 (título), G18 (dado)
+      // worksheet.getCell('G18').value = quote.observation ?? ''; // Se tiver campo de observação
     }
 
-    // ===== PRODUTOS (Row 20+) =====
+    // ===== PRODUTOS (Rows 22+) =====
     this.fillProducts(worksheet, quote.items);
 
     const arquivo = await workbook.xlsx.writeBuffer();
@@ -147,37 +132,38 @@ export class ExcelGeneratorSplashService {
       const subtotal = item.quantity * item.unitPrice;
       const totalProduto = subtotal - subtotal * (discount / 100);
 
-      linha.height = 20;
+      linha.height = 16;
 
-      // Colunas conforme template: A, B, C, D, E, F, G, H
-      linha.getCell(1).value = item.code ?? index + 1; // A - Código
-      linha.getCell(2).value = item.reference ?? ''; // B - Referência
-      linha.getCell(3).value = item.product; // C - Descrição/Produto
-      linha.getCell(4).value = item.quantity; // D - Qtd
-      linha.getCell(5).value = item.unit; // E - Unidade
-      linha.getCell(6).value = item.unitPrice; // F - Unitário
-      linha.getCell(7).value = discount / 100; // G - Desconto %
-      linha.getCell(8).value = totalProduto; // H - Total
+      // Preencher dados conforme mapeamento:
+      // A: Código, B: Referência, C: Descrição, G: Unid., H: Desc %, I: Qtde., J: Vl. Unit., L: Vl. Total
+      linha.getCell(1).value = item.code ?? index + 1; // A22+ - Código
+      linha.getCell(2).value = item.reference ?? ''; // B22+ - Referência
+      linha.getCell(3).value = item.product; // C22+ - Descrição
+      linha.getCell(7).value = item.unit; // G22+ - Unid.
+      linha.getCell(8).value = discount / 100; // H22+ - Desc %
+      linha.getCell(9).value = item.quantity; // I22+ - Qtde.
+      linha.getCell(10).value = item.unitPrice; // J22+ - Vl. Unit.
+      linha.getCell(12).value = totalProduto; // L22+ - Vl. Total
 
       // Formatação
       linha.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
       linha.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' };
       linha.getCell(3).alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
-      linha.getCell(4).alignment = { horizontal: 'center', vertical: 'middle' };
-      linha.getCell(5).alignment = { horizontal: 'center', vertical: 'middle' };
-      linha.getCell(6).alignment = { horizontal: 'right', vertical: 'middle' };
       linha.getCell(7).alignment = { horizontal: 'center', vertical: 'middle' };
-      linha.getCell(8).alignment = { horizontal: 'right', vertical: 'middle' };
+      linha.getCell(8).alignment = { horizontal: 'center', vertical: 'middle' };
+      linha.getCell(9).alignment = { horizontal: 'center', vertical: 'middle' };
+      linha.getCell(10).alignment = { horizontal: 'right', vertical: 'middle' };
+      linha.getCell(12).alignment = { horizontal: 'right', vertical: 'middle' };
 
       // Fontes
-      for (let col = 1; col <= 8; col++) {
+      for (let col of [1, 2, 3, 7, 8, 9, 10, 12]) {
         linha.getCell(col).font = { size: 9 };
       }
 
       // Formatação numérica
-      linha.getCell(6).numFmt = 'R$ #,##0.00';
-      linha.getCell(7).numFmt = '0.00%';
-      linha.getCell(8).numFmt = 'R$ #,##0.00';
+      linha.getCell(8).numFmt = '0.00%';
+      linha.getCell(10).numFmt = 'R$ #,##0.00';
+      linha.getCell(12).numFmt = 'R$ #,##0.00';
 
       linha.commit();
     });
@@ -191,10 +177,10 @@ export class ExcelGeneratorSplashService {
     totalRow.getCell(1).font = { bold: true, size: 11 };
     totalRow.getCell(1).alignment = { horizontal: 'right', vertical: 'middle' };
 
-    totalRow.getCell(8).value = total;
-    totalRow.getCell(8).font = { bold: true, size: 11 };
-    totalRow.getCell(8).numFmt = 'R$ #,##0.00';
-    totalRow.getCell(8).alignment = { horizontal: 'right', vertical: 'middle' };
+    totalRow.getCell(12).value = total;
+    totalRow.getCell(12).font = { bold: true, size: 11 };
+    totalRow.getCell(12).numFmt = 'R$ #,##0.00';
+    totalRow.getCell(12).alignment = { horizontal: 'right', vertical: 'middle' };
 
     totalRow.commit();
   }
@@ -219,7 +205,6 @@ export class ExcelGeneratorSplashService {
       });
 
       // Logo será inserida onde o template indicar
-      // O template já tem placeholder para logo
     } catch {
       // Logo não encontrada, continuar sem ela
     }
