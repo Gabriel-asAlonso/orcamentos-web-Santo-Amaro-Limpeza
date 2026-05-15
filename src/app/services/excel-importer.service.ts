@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import * as XLSX from 'xlsx';
 import { COMPANIES } from '../data/empresas';
 import { CustomerData, ExcelImportResult } from '../model/orcamento.model';
+import { mapProductName } from '../config/product-mapping';
 
 type SheetRow = Array<string | number>;
 
@@ -116,7 +117,7 @@ export class ExcelImporterService {
           id: Date.now() + index,
           code: codigoIndex === -1 ? String(index + 1) : String(row[codigoIndex] ?? '').trim(),
           reference: referenciaIndex === -1 ? '' : String(row[referenciaIndex] ?? '').trim(),
-          product: String(row[produtoIndex] ?? '').trim(),
+          product: mapProductName(String(row[produtoIndex] ?? '').trim()),
           quantity,
           unit: unidadeIndex === -1 ? 'unid.' : String(row[unidadeIndex] ?? 'unid.').trim() || 'unid.',
           unitPrice,
