@@ -29,13 +29,13 @@ export class ExcelGeneratorSplashService {
 
     this.clearWorksheetRowGrouping(worksheet);
 
-    // Ajustar altura das linhas para logo
-    worksheet.getRow(4).height = 45;
-    worksheet.getRow(5).height = 45;
+    // Ajustar altura das linhas para logo maior
+    worksheet.getRow(4).height = 60;
+    worksheet.getRow(5).height = 60;
 
-    // Ajustar largura das colunas para logo
+    // Ajustar largura das colunas para logo e dados
     worksheet.getColumn('A').width = 20;
-    worksheet.getColumn('B').width = 12;
+    worksheet.getColumn('B').width = 15;
 
     await this.insertCompanyLogo(workbook, worksheet, quote.company.logoPath);
 
@@ -125,6 +125,7 @@ export class ExcelGeneratorSplashService {
   private fillProducts(worksheet: ExcelJS.Worksheet, items: QuoteItem[]) {
     const linhaInicial = 22;
     const quantidadeProdutos = items.length;
+    const linhasModelo = 1; // Uma linha modelo (row 22)
 
     // Calcular total
     const total = items.reduce((sum, item) => {
@@ -134,6 +135,22 @@ export class ExcelGeneratorSplashService {
       return sum + totalComDesconto;
     }, 0);
 
+    // Calcular linhas a adicionar/remover
+    const linhasParaAdicionar = Math.max(quantidadeProdutos - linhasModelo, 0);
+    const linhasParaRemover = Math.max(linhasModelo - quantidadeProdutos, 0);
+    const linhaModelo = worksheet.getRow(linhaInicial);
+
+    // Adicionar linhas se necessário
+    if (linhasParaAdicionar > 0) {
+      worksheet.spliceRows(linhaInicial + linhasModelo, 0, ...Array.from({ length: linhasParaAdicionar }, () => []));
+    }
+
+    // Remover linhas se necessário
+    if (linhasParaRemover > 0) {
+      worksheet.spliceRows(linhaInicial + quantidadeProdutos, linhasParaRemover);
+    }
+
+    // Preencher produtos
     items.forEach((item, index) => {
       const rowNumber = linhaInicial + index;
       const linha = worksheet.getRow(rowNumber);
@@ -143,16 +160,23 @@ export class ExcelGeneratorSplashService {
 
       linha.height = 16;
 
-      // Preencher dados conforme mapeamento:
-      // A: Código, B: Referência, C: Descrição, G: Unid., H: Desc %, I: Qtde., J: Vl. Unit., L: Vl. Total
-      linha.getCell(1).value = item.code ?? index + 1; // A22+ - Código
-      linha.getCell(2).value = item.reference ?? ''; // B22+ - Referência
-      linha.getCell(3).value = item.product; // C22+ - Descrição
-      linha.getCell(7).value = item.unit; // G22+ - Unid.
-      linha.getCell(8).value = discount / 100; // H22+ - Desc %
-      linha.getCell(9).value = item.quantity; // I22+ - Qtde.
-      linha.getCell(10).value = item.unitPrice; // J22+ - Vl. Unit.
-      linha.getCell(12).value = totalProduto; // L22+ - Vl. Total
+      // Copiar estilo da linha modelo
+      for (let col = 1; col <= 12; col++) {
+        const cell = linha.getCell(col);
+        const modelCell = linhaModelo.getCell(col);
+        cell.value = null;
+        this.copyCellStyle(modelCell, cell);
+      }
+
+      // Preencher dados
+      linha.getCell(1).value = item.code ?? index + 1; // A - Código
+      linha.getCell(2).value = item.reference ?? ''; // B - Referência
+      linha.getCell(3).value = item.product; // C - Descrição
+      linha.getCell(7).value = item.unit; // G - Unid.
+      linha.getCell(8).value = discount / 100; // H - Desc %
+      linha.getCell(9).value = item.quantity; // I - Qtde.
+      linha.getCell(10).value = item.unitPrice; // J - Vl. Unit.
+      linha.getCell(12).value = totalProduto; // L - Vl. Total
 
       // Formatação - tudo alinhado à esquerda e sem negrito
       for (let col of [1, 2, 3, 7, 8, 9, 10, 12]) {
@@ -168,7 +192,20 @@ export class ExcelGeneratorSplashService {
       linha.commit();
     });
 
+    // Colocar total na linha correta (depois do último produto)
+    const linhaTotalRow = linhaInicial + quantidadeProdutos + 1;
+    worksheet.getCell(linhaTotalRow, 12).value = total; // L + 1 linha
+    worksheet.getCell(linhaTotalRow, 12).font = { size: 9, bold: false };
+    worksheet.getCell(linhaTotalRow, 12).numFmt = 'R$ #,##0.00';
+    worksheet.getCell(linhaTotalRow, 12).alignment = { horizontal: 'left', vertical: 'middle' };
+  }
 
+  private copyCellStyle(source: ExcelJS.Cell, target: ExcelJS.Cell) {
+    target.font = { ...source.font };
+    target.alignment = { ...source.alignment };
+    target.border = { ...source.border };
+    target.fill = { ...source.fill };
+    target.numFmt = source.numFmt;
   }
 
   private clearWorksheetRowGrouping(worksheet: ExcelJS.Worksheet) {
@@ -190,10 +227,8 @@ export class ExcelGeneratorSplashService {
         extension: 'png'
       });
 
-      worksheet.addImage(logoImage, {
-        tl: { col: 2.40, row: 3.15 } as any,
-        ext: { width: 98, height: 98 }
-      });
+      // Logo em A4:B5 - maior e centralizada
+      worksheet.addImage(logoImage, 'A4:B5');
     } catch {
       // Logo não encontrada, continuar sem ela
     }
