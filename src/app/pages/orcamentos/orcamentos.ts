@@ -22,6 +22,7 @@ import { CustomerData, Quote, QuoteItem } from '../../model/orcamento.model';
 import { ExcelComparativoService, type ComparativeQuote } from '../../services/excel-comparativo.service';
 import { ExcelGeneratorService } from '../../services/excel-generator.service';
 import { COMPANIES, type Company } from '../../data/empresas';
+import { mapProductName } from '../../config/product-mapping';
 
 @Component({
   selector: 'app-root',
@@ -138,11 +139,13 @@ export class orcamentos {
   updateItem(id: number, field: keyof QuoteItem, value: string) {
     if (this.isImportedBaseLocked) return;
 
+    const mappedValue = field === 'product' ? mapProductName(value) : value;
+
     this.items = this.items.map(item =>
       item.id === id
         ? {
             ...item,
-            [field]: this.isTextItemField(field) ? value : this.parsePositiveNumber(value)
+            [field]: this.isTextItemField(field) ? mappedValue : this.parsePositiveNumber(value)
           }
         : item
     );
@@ -223,13 +226,15 @@ export class orcamentos {
   updateEditingItem(id: number, field: keyof QuoteItem, value: string) {
     if (!this.editingQuote) return;
 
+    const mappedValue = field === 'product' ? mapProductName(value) : value;
+
     this.editingQuote = {
       ...this.editingQuote,
       items: this.editingQuote.items.map(item =>
         item.id === id
           ? {
               ...item,
-              [field]: this.isTextItemField(field) ? value : this.parsePositiveNumber(value)
+              [field]: this.isTextItemField(field) ? mappedValue : this.parsePositiveNumber(value)
             }
           : item
       )
