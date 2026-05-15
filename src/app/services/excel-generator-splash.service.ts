@@ -29,13 +29,13 @@ export class ExcelGeneratorSplashService {
 
     this.clearWorksheetRowGrouping(worksheet);
 
-    // Ajustar altura das linhas para logo maior
-    worksheet.getRow(4).height = 60;
-    worksheet.getRow(5).height = 60;
+    // Ajustar altura das linhas para logo
+    worksheet.getRow(4).height = 45;
+    worksheet.getRow(5).height = 45;
 
     // Ajustar largura das colunas para logo
-    worksheet.getColumn('A').width = 15;
-    worksheet.getColumn('B').width = 15;
+    worksheet.getColumn('A').width = 12;
+    worksheet.getColumn('B').width = 12;
 
     await this.insertCompanyLogo(workbook, worksheet, quote.company.logoPath);
 
@@ -204,8 +204,10 @@ export class ExcelGeneratorSplashService {
         extension: 'png'
       });
 
-      // Logo em A4:B5 - maior e centralizada
-      worksheet.addImage(logoImage, 'A4:B5');
+      worksheet.addImage(logoImage, {
+        tl: { col: 2.40, row: 3.15 } as any,
+        ext: { width: 98, height: 98 }
+      });
     } catch {
       // Logo não encontrada, continuar sem ela
     }
