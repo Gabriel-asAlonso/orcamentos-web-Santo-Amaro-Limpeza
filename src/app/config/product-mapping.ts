@@ -7,5 +7,25 @@ export const PRODUCT_MAPPING: Record<string, string> = {
 };
 
 export function mapProductName(productName: string): string {
-  return PRODUCT_MAPPING[productName] || productName;
+  const trimmed = productName.trim();
+
+  // Match exato (comportamento original, sem litragem no nome)
+  if (PRODUCT_MAPPING[trimmed]) {
+    return PRODUCT_MAPPING[trimmed];
+  }
+
+  // Separar sufixo de litragem no final do nome: "5L", "2 L", "1,5L", "20L"
+  const volumeMatch = trimmed.match(/\s+(\d+(?:[.,]\d+)?\s*L)\s*$/i);
+
+  if (volumeMatch?.index !== undefined) {
+    const volume = volumeMatch[1].replace(/\s+/g, '').toUpperCase();
+    const baseName = trimmed.slice(0, volumeMatch.index).trim();
+    const mappedBase = PRODUCT_MAPPING[baseName];
+
+    if (mappedBase) {
+      return `${mappedBase} ${volume}`;
+    }
+  }
+
+  return productName;
 }
