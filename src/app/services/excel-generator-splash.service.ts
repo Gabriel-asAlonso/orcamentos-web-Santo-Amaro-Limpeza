@@ -250,8 +250,11 @@ export class ExcelGeneratorSplashService {
         extension: 'png'
       });
 
-      // Logo em A4:B5 - maior e centralizada
-      worksheet.addImage(logoImage, 'A4:B5');
+      worksheet.addImage(logoImage, {
+        tl: { col: 2.40, row: 3.15 } as any,
+        ext: { width: 118, height: 118 }
+      });
+      
     } catch {
       // Logo não encontrada, continuar sem ela
     }
