@@ -6,12 +6,23 @@ export const PRODUCT_MAPPING: Record<string, string> = {
   'Peroxy Pro SA': 'Limpador de Uso Geral Concentrado (Peróxido de Hidrogênio)'
 };
 
+// Mapa normalizado (chaves em minúsculo) para busca case-insensitive
+const NORMALIZED_MAPPING: Record<string, string> = Object.fromEntries(
+  Object.entries(PRODUCT_MAPPING).map(([key, value]) => [key.trim().toLowerCase(), value])
+);
+
+function lookupMapping(name: string): string | undefined {
+  return NORMALIZED_MAPPING[name.trim().toLowerCase()];
+}
+
 export function mapProductName(productName: string): string {
   const trimmed = productName.trim();
 
-  // Match exato (comportamento original, sem litragem no nome)
-  if (PRODUCT_MAPPING[trimmed]) {
-    return PRODUCT_MAPPING[trimmed];
+  // Match do nome completo (case-insensitive, sem litragem no nome)
+  const direct = lookupMapping(trimmed);
+
+  if (direct) {
+    return direct;
   }
 
   // Separar sufixo de litragem no final do nome: "5L", "2 L", "1,5L", "20L"
@@ -20,7 +31,7 @@ export function mapProductName(productName: string): string {
   if (volumeMatch?.index !== undefined) {
     const volume = volumeMatch[1].replace(/\s+/g, '').toUpperCase();
     const baseName = trimmed.slice(0, volumeMatch.index).trim();
-    const mappedBase = PRODUCT_MAPPING[baseName];
+    const mappedBase = lookupMapping(baseName);
 
     if (mappedBase) {
       return `${mappedBase} ${volume}`;
