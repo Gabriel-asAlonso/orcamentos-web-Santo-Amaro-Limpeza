@@ -168,6 +168,44 @@ export class ExcelGeneratorLagunaService {
     totalRow.getCell(11).value = total; // K - Total geral
     totalRow.getCell(11).numFmt = 'R$ #,##0.00';
     totalRow.commit();
+
+    // Deixar Observações e Resumo da Proposta vazios (o splice de linhas
+    // quebra os merges e duplica os títulos por toda a linha)
+    this.clearObservationsAndSummary(worksheet, linhaTotal);
+
+    // Recolorir a lateral abaixo do Vendedor (as linhas inseridas pelo
+    // spliceRows vêm sem estilo, criando a faixa branca)
+    this.fillSidebarBackground(worksheet, linhaTotal);
+  }
+
+  private clearObservationsAndSummary(worksheet: ExcelJS.Worksheet, linhaTotal: number) {
+    for (let rowNumber = linhaTotal + 1; rowNumber <= worksheet.rowCount; rowNumber++) {
+      const row = worksheet.getRow(rowNumber);
+
+      for (let colNumber = 1; colNumber <= 12; colNumber++) {
+        const cell = row.getCell(colNumber);
+        const text = String(cell.value ?? '').trim().toLowerCase();
+
+        if (text.includes('observ') || text.includes('resumo')) {
+          cell.value = null;
+        }
+      }
+    }
+  }
+
+  private fillSidebarBackground(worksheet: ExcelJS.Worksheet, linhaTotal: number) {
+    const sidebarColor = 'FF4F5FB8';
+    const inicio = 20; // logo abaixo do bloco do Vendedor (A18:C19)
+
+    for (let rowNumber = inicio; rowNumber <= linhaTotal; rowNumber++) {
+      for (let colNumber = 1; colNumber <= 3; colNumber++) {
+        worksheet.getRow(rowNumber).getCell(colNumber).fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: sidebarColor }
+        };
+      }
+    }
   }
 
   private findTotalRow(worksheet: ExcelJS.Worksheet) {
