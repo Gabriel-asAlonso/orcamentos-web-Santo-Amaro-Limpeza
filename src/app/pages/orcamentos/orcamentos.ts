@@ -293,7 +293,7 @@ export class orcamentos {
   updateEditingDate(value: string) {
     if (!this.editingQuote) return;
 
-    const newDate = value ? new Date(value) : undefined;
+    const newDate = this.parseLocalDate(value);
     this.editingQuote = {
       ...this.editingQuote,
       date: newDate
@@ -302,7 +302,24 @@ export class orcamentos {
 
   getFormattedDate(date?: Date): string {
     if (!date) return '';
-    return date.toISOString().split('T')[0];
+
+    const localDate = new Date(date);
+    const year = localDate.getFullYear();
+    const month = String(localDate.getMonth() + 1).padStart(2, '0');
+    const day = String(localDate.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+  }
+
+  private parseLocalDate(value: string): Date | undefined {
+    if (!value) return undefined;
+
+    const [year, month, day] = value.split('-').map(Number);
+
+    if (!year || !month || !day) return undefined;
+
+    // Cria a data no fuso local (evita o erro de UTC do new Date('yyyy-MM-dd'))
+    return new Date(year, month - 1, day);
   }
 
   saveEditingQuote() {
