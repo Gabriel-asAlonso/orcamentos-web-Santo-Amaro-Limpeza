@@ -14,17 +14,28 @@ O sistema agora suporta layouts personalizados de Excel para cada empresa, permi
    - Método: `generateQuoteExcel(quote: Quote)` encapsula a geração
 
 2. **ExcelGeneratorService** (padrão)
-   - Usado para: Laguna, Peg-Limp, GrapaClean, Santa Limpeza
+   - Usado para: Peg-Limp, GrapaClean, Santa Limpeza
    - Template: `assets/templates/cotacao-template.xlsx`
    - Layout: Original do sistema
 
-3. **ExcelGeneratorSplashService** (novo)
+3. **ExcelGeneratorSplashService**
    - Usado para: Splash (id: 'splash')
    - Template: `assets/templates/cotacao-template-Splash.xlsx`
    - Layout: Personalizado com especificações da Splash
      - Logo: A4:B5
      - Empresa: A2:F3
      - Campos de cliente com labels específicos
+
+4. **ExcelGeneratorLagunaService**
+   - Usado para: Laguna (id: 'Laguna')
+   - Template: `assets/templates/cotacao-template-Laguna.xlsx`
+   - Layout: Personalizado com especificações da Laguna
+     - Logo: A2:C4 (abaixo do nome "LAGUNA")
+     - Lateral esquerda: Empresa (A6:C7), CNPJ (A10:C11), Data (A14:C15), Vendedor (A18:C19)
+     - Cliente: E5:F9 | Condições e contato: H5:K9
+     - Itens: cabeçalho linha 11, dados a partir da linha 12 (colunas D-K)
+     - Total geral: K24 (posição variável, acompanha a tabela)
+     - Observações: D28:K29
 
 ## Como Adicionar um Novo Layout
 
@@ -186,7 +197,7 @@ cell.numFmt = 'dd/mm/yyyy';
 | Empresa | ID | Service | Template |
 |---------|----|----|----------|
 | Splash | `splash` | ExcelGeneratorSplashService | `cotacao-template-Splash.xlsx` |
-| Laguna | `Laguna` | ExcelGeneratorService (padrão) | `cotacao-template.xlsx` |
+| Laguna | `Laguna` | ExcelGeneratorLagunaService | `cotacao-template-Laguna.xlsx` |
 | Peg-Limp | `peg-limp` | ExcelGeneratorService (padrão) | `cotacao-template.xlsx` |
 | GrapaClean | `grapa-clean` | ExcelGeneratorService (padrão) | `cotacao-template.xlsx` |
 | Santa Limpeza | `Santa Limpeza` | ExcelGeneratorService (padrão) | `cotacao-template.xlsx` |

@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Quote } from '../model/orcamento.model';
 import { ExcelGeneratorService } from './excel-generator.service';
 import { ExcelGeneratorSplashService } from './excel-generator-splash.service';
+import { ExcelGeneratorLagunaService } from './excel-generator-laguna.service';
 
 @Injectable({
   providedIn: 'root'
@@ -9,11 +10,14 @@ import { ExcelGeneratorSplashService } from './excel-generator-splash.service';
 export class ExcelGeneratorFactory {
   private defaultGenerator = inject(ExcelGeneratorService);
   private splashGenerator = inject(ExcelGeneratorSplashService);
+  private lagunaGenerator = inject(ExcelGeneratorLagunaService);
 
   getGenerator(companyId: string) {
     switch (companyId.toLowerCase()) {
       case 'splash':
         return this.splashGenerator;
+      case 'laguna':
+        return this.lagunaGenerator;
       default:
         return this.defaultGenerator;
     }
