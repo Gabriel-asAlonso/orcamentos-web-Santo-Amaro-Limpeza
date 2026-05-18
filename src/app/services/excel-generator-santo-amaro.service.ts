@@ -29,6 +29,10 @@ export class ExcelGeneratorSantoAmaroService {
 
     this.clearWorksheetRowGrouping(worksheet);
 
+    // Desligar as linhas de grade (o template não as desliga; sem isso a
+    // área limpa abaixo do total mostra a grade padrão)
+    worksheet.views = [{ showGridLines: false }];
+
     const customer = quote.customerData;
     const companyDocument = quote.company.cnpj || quote.company.taxId || '';
     const quoteDate = quote.date ? new Date(quote.date) : new Date();
@@ -224,17 +228,21 @@ export class ExcelGeneratorSantoAmaroService {
   }
 
   private clearFrom(worksheet: ExcelJS.Worksheet, startRow: number) {
-    // Limpa valor, bordas e preenchimento. O splice empurra o rodapé
-    // (Observações/Condições/branding) para baixo do total e o ExcelJS
-    // não move os estilos junto, deixando "caixas" coloridas/bordadas.
-    for (let rowNumber = startRow; rowNumber <= worksheet.rowCount; rowNumber++) {
+    // O splice empurra o rodapé (Observações/Condições/branding) para
+    // baixo do total mas o ExcelJS não move os estilos junto, deixando
+    // "caixas" coloridas/bordadas. Resetar o estilo inteiro da célula
+    // (cell.style = {}) remove de fato bordas/preenchimento, ao contrário
+    // de cell.border = {}. Limpa uma faixa generosa (rowCount não cobre
+    // linhas com estilo mas sem valor).
+    const ultimaLinha = Math.max(worksheet.rowCount, startRow) + 50;
+
+    for (let rowNumber = startRow; rowNumber <= ultimaLinha; rowNumber++) {
       const row = worksheet.getRow(rowNumber);
 
       for (let colNumber = 1; colNumber <= 16; colNumber++) {
         const cell = row.getCell(colNumber);
         cell.value = null;
-        cell.border = {};
-        cell.fill = { type: 'pattern', pattern: 'none' };
+        cell.style = {};
       }
     }
   }
