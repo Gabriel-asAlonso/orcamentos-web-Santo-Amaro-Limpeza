@@ -14,7 +14,7 @@ O sistema agora suporta layouts personalizados de Excel para cada empresa, permi
    - Método: `generateQuoteExcel(quote: Quote)` encapsula a geração
 
 2. **ExcelGeneratorService** (padrão)
-   - Usado para: Peg-Limp, GrapaClean, Santa Limpeza
+   - Usado para: Peg-Limp, GrapaClean
    - Template: `assets/templates/cotacao-template.xlsx`
    - Layout: Original do sistema
 
@@ -36,6 +36,16 @@ O sistema agora suporta layouts personalizados de Excel para cada empresa, permi
      - Itens: cabeçalho linha 11, dados a partir da linha 12 (colunas D-K)
      - Total geral: K24 (posição variável, acompanha a tabela)
      - Observações: D28:K29
+
+5. **ExcelGeneratorSantoAmaroService**
+   - Usado para: Santa Limpeza (id: 'Santa Limpeza')
+   - Template: `assets/templates/cotacao-template-santo-amaro.xlsx`
+   - Layout: Personalizado com a marca Santo Amaro (logo/cabeçalho fixos no template)
+     - Dados do cliente: B9:F11, B12/E12, B13/E13
+     - Resumo da proposta: I9:J13 | Condições: L9:L13
+     - Itens: cabeçalho linha 15, dados a partir da linha 16 (Descrição C:F, Vl. Total K:L)
+     - Total geral: K (posição variável, acompanha a tabela)
+     - Rodapé limpo após o total
 
 ## Como Adicionar um Novo Layout
 
@@ -200,7 +210,7 @@ cell.numFmt = 'dd/mm/yyyy';
 | Laguna | `Laguna` | ExcelGeneratorLagunaService | `cotacao-template-Laguna.xlsx` |
 | Peg-Limp | `peg-limp` | ExcelGeneratorService (padrão) | `cotacao-template.xlsx` |
 | GrapaClean | `grapa-clean` | ExcelGeneratorService (padrão) | `cotacao-template.xlsx` |
-| Santa Limpeza | `Santa Limpeza` | ExcelGeneratorService (padrão) | `cotacao-template.xlsx` |
+| Santa Limpeza | `Santa Limpeza` | ExcelGeneratorSantoAmaroService | `cotacao-template-santo-amaro.xlsx` |
 
 ## Próximos Passos
 
