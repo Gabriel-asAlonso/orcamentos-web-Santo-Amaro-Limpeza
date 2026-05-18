@@ -88,6 +88,6 @@ export const COMPANIES: Company[] = [
     postalCode: '04726-001',
     cnpj: ' 31622352/0001-02',
     stateRegistration: '126.188.105.117',
-    website: 'www.grapaclean.com.br'
+    website: ''
   }
 ];
