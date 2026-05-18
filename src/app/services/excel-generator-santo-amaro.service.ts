@@ -101,23 +101,31 @@ export class ExcelGeneratorSantoAmaroService {
   private fillProducts(worksheet: ExcelJS.Worksheet, items: QuoteItem[]) {
     const linhaInicial = 16;
     const linhaTotalOriginal = this.findTotalRow(worksheet) ?? 27;
-    const quantidadeProdutos = items.length;
+    const quantidadeProdutos = Math.max(items.length, 1);
     const quantidadeLinhasModelo = Math.max(linhaTotalOriginal - linhaInicial, 1);
     const linhasParaRemover = Math.max(quantidadeLinhasModelo - quantidadeProdutos, 0);
     const linhasParaAdicionar = Math.max(quantidadeProdutos - quantidadeLinhasModelo, 0);
 
-    const linhaModelo = worksheet.getRow(linhaInicial);
+    // Capturar estilos ANTES de qualquer alteração
+    const estiloProduto = Array.from({ length: 12 }, (_, i) =>
+      this.snapshotStyle(worksheet.getRow(linhaInicial).getCell(i + 1))
+    );
+    const estiloTotalLabel = this.snapshotStyle(worksheet.getCell(`H${linhaTotalOriginal}`));
+    const estiloTotalValor = this.snapshotStyle(worksheet.getCell(`K${linhaTotalOriginal}`));
+    const alturaProduto = worksheet.getRow(linhaInicial).height ?? 19.5;
 
     // Calcular total
     const total = items.reduce((sum, item) => {
       const discount = item.discount ?? 0;
       const subtotal = item.quantity * item.unitPrice;
-      const totalComDesconto = subtotal - subtotal * (discount / 100);
-      return sum + totalComDesconto;
+      return sum + (subtotal - subtotal * (discount / 100));
     }, 0);
 
-    // Inserir linhas antes do total (empurra a linha TOTAL GERAL para baixo,
-    // preservando seu estilo do template automaticamente)
+    // Remover TODOS os merges da região dinâmica (produtos + total + rodapé)
+    // para o splice não duplicar/quebrar os merges multi-linha do template
+    this.unmergeFrom(worksheet, linhaInicial);
+
+    // Ajustar a quantidade de linhas
     if (linhasParaAdicionar > 0) {
       worksheet.spliceRows(
         linhaTotalOriginal,
@@ -126,12 +134,11 @@ export class ExcelGeneratorSantoAmaroService {
       );
     }
 
-    // Remover linhas modelo excedentes (puxa a linha TOTAL GERAL para cima)
     if (linhasParaRemover > 0) {
       worksheet.spliceRows(linhaInicial + quantidadeProdutos, linhasParaRemover);
     }
 
-    // O total agora fica sempre logo abaixo do último produto
+    // O total fica sempre logo abaixo do último produto
     const linhaTotal = linhaInicial + quantidadeProdutos;
 
     // Preencher produtos
@@ -142,15 +149,16 @@ export class ExcelGeneratorSantoAmaroService {
       const subtotal = item.quantity * item.unitPrice;
       const totalProduto = subtotal - subtotal * (discount / 100);
 
-      // Copiar estilo da linha modelo (preserva formatação do template)
+      linha.height = alturaProduto;
+
+      // Aplicar o estilo capturado da linha modelo
       for (let col = 1; col <= 12; col++) {
         const cell = linha.getCell(col);
-        const modelCell = linhaModelo.getCell(col);
         cell.value = null;
-        this.copyCellStyle(modelCell, cell);
+        this.applyStyle(cell, estiloProduto[col - 1]);
       }
 
-      // Manter os merges da linha (Descrição C:F e Vl. Total K:L)
+      // Recriar os merges da linha (Descrição C:F e Vl. Total K:L)
       this.safeMerge(worksheet, `C${rowNumber}:F${rowNumber}`);
       this.safeMerge(worksheet, `K${rowNumber}:L${rowNumber}`);
 
@@ -164,34 +172,79 @@ export class ExcelGeneratorSantoAmaroService {
       linha.getCell(10).value = item.unitPrice; // J - Vl. Unitário
       linha.getCell(11).value = totalProduto; // K - Vl. Total (K:L)
 
-      // Formatação numérica
+      // Formatação numérica explícita (evita herdar formato errado do modelo)
+      linha.getCell(1).alignment = { horizontal: 'center', vertical: 'middle', wrapText: false };
       linha.getCell(8).numFmt = '0.00%';
+      linha.getCell(9).numFmt = '#,##0.##';
       linha.getCell(10).numFmt = 'R$ #,##0.00';
       linha.getCell(11).numFmt = 'R$ #,##0.00';
 
       linha.commit();
     });
 
-    // Preencher o valor do total na linha que se moveu junto com o template
-    const totalRow = worksheet.getRow(linhaTotal);
-    totalRow.getCell(11).value = total; // K - Total geral (K:L)
-    totalRow.getCell(11).numFmt = 'R$ #,##0.00';
-    totalRow.commit();
+    // Limpar total + rodapé (resíduos do template / splice)
+    this.clearFrom(worksheet, linhaTotal);
 
-    // Limpar tudo abaixo do total (o splice quebra os merges do rodapé e
-    // duplica títulos/textos; o mapeamento termina no Total)
-    this.clearBelowTotal(worksheet, linhaTotal);
+    // Reconstruir o total do zero (2 linhas de altura, como no template)
+    this.safeMerge(worksheet, `H${linhaTotal}:J${linhaTotal + 1}`);
+    this.safeMerge(worksheet, `K${linhaTotal}:L${linhaTotal + 1}`);
+
+    const totalLabel = worksheet.getCell(`H${linhaTotal}`);
+    totalLabel.value = 'TOTAL GERAL';
+    this.applyStyle(totalLabel, estiloTotalLabel);
+
+    const totalValor = worksheet.getCell(`K${linhaTotal}`);
+    totalValor.value = total;
+    this.applyStyle(totalValor, estiloTotalValor);
+    totalValor.numFmt = 'R$ #,##0.00';
+
+    worksheet.getRow(linhaTotal).height = 24;
+    worksheet.getRow(linhaTotal + 1).height = 24;
   }
 
-  private clearBelowTotal(worksheet: ExcelJS.Worksheet, linhaTotal: number) {
-    // O total ocupa 2 linhas (merge), preservar a linha imediatamente abaixo
-    for (let rowNumber = linhaTotal + 2; rowNumber <= worksheet.rowCount; rowNumber++) {
+  private clearFrom(worksheet: ExcelJS.Worksheet, startRow: number) {
+    for (let rowNumber = startRow; rowNumber <= worksheet.rowCount; rowNumber++) {
       const row = worksheet.getRow(rowNumber);
 
       for (let colNumber = 1; colNumber <= 12; colNumber++) {
         row.getCell(colNumber).value = null;
       }
     }
+  }
+
+  private unmergeFrom(worksheet: ExcelJS.Worksheet, startRow: number) {
+    const merges: string[] = [...(((worksheet as any).model?.merges as string[]) ?? [])];
+
+    for (const range of merges) {
+      const match = /^[A-Z]+(\d+):[A-Z]+\d+$/.exec(range);
+
+      if (match && Number(match[1]) >= startRow) {
+        try {
+          worksheet.unMergeCells(range);
+        } catch {}
+      }
+    }
+  }
+
+  private snapshotStyle(cell: ExcelJS.Cell) {
+    return {
+      font: cell.font ? { ...cell.font } : undefined,
+      alignment: cell.alignment ? { ...cell.alignment } : undefined,
+      border: cell.border ? { ...cell.border } : undefined,
+      fill: cell.fill ? { ...cell.fill } : undefined,
+      numFmt: cell.numFmt
+    };
+  }
+
+  private applyStyle(
+    cell: ExcelJS.Cell,
+    style: ReturnType<ExcelGeneratorSantoAmaroService['snapshotStyle']>
+  ) {
+    if (style.font) cell.font = { ...style.font };
+    if (style.alignment) cell.alignment = { ...style.alignment };
+    if (style.border) cell.border = { ...style.border };
+    if (style.fill) cell.fill = { ...style.fill };
+    if (style.numFmt) cell.numFmt = style.numFmt;
   }
 
   private findTotalRow(worksheet: ExcelJS.Worksheet) {
@@ -218,14 +271,6 @@ export class ExcelGeneratorSantoAmaroService {
     try {
       worksheet.mergeCells(range);
     } catch {}
-  }
-
-  private copyCellStyle(source: ExcelJS.Cell, target: ExcelJS.Cell) {
-    target.font = { ...source.font };
-    target.alignment = { ...source.alignment };
-    target.border = { ...source.border };
-    target.fill = { ...source.fill };
-    target.numFmt = source.numFmt;
   }
 
   private clearWorksheetRowGrouping(worksheet: ExcelJS.Worksheet) {
