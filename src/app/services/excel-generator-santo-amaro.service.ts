@@ -57,7 +57,14 @@ export class ExcelGeneratorSantoAmaroService {
 
     // ===== RESUMO DA PROPOSTA (meio) =====
     // DATA DO ORÇAMENTO: H9 (título), I9:J9 (dado)
-    worksheet.getCell('I9').value = quoteDate.toLocaleDateString('pt-BR');
+    // Formatar manualmente a partir dos componentes locais e forçar a
+    // célula como texto, para a planilha não reinterpretar a data
+    const dia = String(quoteDate.getDate()).padStart(2, '0');
+    const mes = String(quoteDate.getMonth() + 1).padStart(2, '0');
+    const ano = quoteDate.getFullYear();
+    const dataCell = worksheet.getCell('I9');
+    dataCell.numFmt = '@';
+    dataCell.value = `${dia}/${mes}/${ano}`;
 
     // VALIDADE: H10 (título), I10:J10 (dado) - sem origem, limpar exemplo
     worksheet.getCell('I10').value = '';
@@ -217,11 +224,17 @@ export class ExcelGeneratorSantoAmaroService {
   }
 
   private clearFrom(worksheet: ExcelJS.Worksheet, startRow: number) {
+    // Limpa valor, bordas e preenchimento. O splice empurra o rodapé
+    // (Observações/Condições/branding) para baixo do total e o ExcelJS
+    // não move os estilos junto, deixando "caixas" coloridas/bordadas.
     for (let rowNumber = startRow; rowNumber <= worksheet.rowCount; rowNumber++) {
       const row = worksheet.getRow(rowNumber);
 
-      for (let colNumber = 1; colNumber <= 12; colNumber++) {
-        row.getCell(colNumber).value = null;
+      for (let colNumber = 1; colNumber <= 16; colNumber++) {
+        const cell = row.getCell(colNumber);
+        cell.value = null;
+        cell.border = {};
+        cell.fill = { type: 'pattern', pattern: 'none' };
       }
     }
   }
