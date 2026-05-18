@@ -114,6 +114,9 @@ export class ExcelGeneratorSantoAmaroService {
     const estiloTotalValor = this.snapshotStyle(worksheet.getCell(`K${linhaTotalOriginal}`));
     const alturaProduto = worksheet.getRow(linhaInicial).height ?? 19.5;
 
+    // Aumentar a largura da coluna do Código (códigos longos)
+    worksheet.getColumn(1).width = 18;
+
     // Calcular total
     const total = items.reduce((sum, item) => {
       const discount = item.discount ?? 0;
@@ -200,6 +203,17 @@ export class ExcelGeneratorSantoAmaroService {
 
     worksheet.getRow(linhaTotal).height = 24;
     worksheet.getRow(linhaTotal + 1).height = 24;
+
+    // Borda à direita da tabela de produtos (cabeçalho -> total),
+    // na última coluna (L), preservando as bordas existentes
+    const bordaDireita: Partial<ExcelJS.Borders> = {
+      right: { style: 'thin', color: { argb: 'FF000000' } }
+    };
+
+    for (let rowNumber = linhaInicial - 1; rowNumber <= linhaTotal + 1; rowNumber++) {
+      const cell = worksheet.getRow(rowNumber).getCell(12);
+      cell.border = { ...cell.border, ...bordaDireita };
+    }
   }
 
   private clearFrom(worksheet: ExcelJS.Worksheet, startRow: number) {
