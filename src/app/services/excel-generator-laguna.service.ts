@@ -72,8 +72,8 @@ export class ExcelGeneratorLagunaService {
       // Forma pgto.: G6 (título), H6:K6 (dado)
       worksheet.getCell('H6').value = quote.paymentMethod;
 
-      // Tabela: G7 (título), H7:K7 (dado)
-      worksheet.getCell('H7').value = customer.priceTable ?? '';
+      // Prazo de entrega: G7 (título), H7:K7 (dado)
+      worksheet.getCell('H7').value = quote.deliveryTime ?? '';
 
       // Contato: G8 (título), H8:K8 (dado)
       worksheet.getCell('H8').value = customer.contact ?? '';
@@ -251,8 +251,11 @@ export class ExcelGeneratorLagunaService {
         extension: 'png'
       });
 
-      // Logo em A2:C4 - abaixo do nome Laguna
-      worksheet.addImage(logoImage, 'A2:C4');
+      // Logo posicionada no centro visual do bloco A2:C4 - abaixo do nome Laguna
+      worksheet.addImage(logoImage, {
+        tl: { col: 0.76, row: 1.22 } as any,
+        ext: { width: 118, height: 118 }
+      });
     } catch {
       // Logo não encontrada, continuar sem ela
     }
