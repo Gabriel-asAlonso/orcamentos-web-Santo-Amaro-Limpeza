@@ -29,8 +29,6 @@ export class ExcelGeneratorLagunaService {
 
     this.clearWorksheetRowGrouping(worksheet);
 
-    await this.insertCompanyLogo(workbook, worksheet, quote.company.logoPath);
-
     const customer = quote.customerData;
     const companyDocument = quote.company.cnpj || quote.company.taxId || '';
     const quoteDate = quote.date ? new Date(quote.date) : new Date();
@@ -236,28 +234,4 @@ export class ExcelGeneratorLagunaService {
     (worksheet as any).rowOutlineLevel = 0;
   }
 
-  private async insertCompanyLogo(
-    workbook: ExcelJS.Workbook,
-    worksheet: ExcelJS.Worksheet,
-    logoPath: string
-  ) {
-    try {
-      const logoResponse = await fetch(logoPath);
-      if (!logoResponse.ok) throw new Error('Logo not found');
-
-      const logoBuffer = await logoResponse.arrayBuffer();
-      const logoImage = workbook.addImage({
-        buffer: logoBuffer,
-        extension: 'png'
-      });
-
-      // Logo posicionada no centro visual do bloco A2:C4 - abaixo do nome Laguna
-      worksheet.addImage(logoImage, {
-        tl: { col: 0.76, row: 1.22 } as any,
-        ext: { width: 118, height: 118 }
-      });
-    } catch {
-      // Logo não encontrada, continuar sem ela
-    }
-  }
 }
