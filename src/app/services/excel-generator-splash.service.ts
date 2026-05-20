@@ -43,14 +43,19 @@ export class ExcelGeneratorSplashService {
     dataCell.value = `${dia}/${mes}/${ano}`;
 
     // ===== DADOS DO CLIENTE =====
-    // O template não tem mais a linha 9 (At.: / Fone:), apenas NOME, CNPJ e END.
+    // Apenas sobrescreve se o customer tem valor real para o campo.
+    // Se o campo está vazio, mantém o conteúdo do template (que pode
+    // ter dados de exemplo ou ficar vazio se o template foi limpo).
     if (customer) {
-      // B6:D6 mergido - cliente (NOME)
-      worksheet.getCell('B6').value = customer.client ?? '';
-      // B7:C7 mergido - cnpj
-      worksheet.getCell('B7').value = customer.document ?? '';
-      // B8:F8 mergido - endereço
-      worksheet.getCell('B8').value = customer.address ?? '';
+      if (customer.client) {
+        worksheet.getCell('B6').value = customer.client;
+      }
+      if (customer.document) {
+        worksheet.getCell('B7').value = customer.document;
+      }
+      if (customer.address) {
+        worksheet.getCell('B8').value = customer.address;
+      }
     }
 
     // ===== CONDIÇÕES COMERCIAIS =====
