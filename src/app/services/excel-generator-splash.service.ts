@@ -29,89 +29,60 @@ export class ExcelGeneratorSplashService {
 
     this.clearWorksheetRowGrouping(worksheet);
 
-    // Ajustar altura das linhas para logo maior
-    worksheet.getRow(4).height = 60;
-    worksheet.getRow(5).height = 60;
+    // Ajustar altura das linhas para logo
+    worksheet.getRow(1).height = 18;
+    worksheet.getRow(2).height = 18;
+    worksheet.getRow(3).height = 18;
+    worksheet.getRow(4).height = 18;
 
-    // Ajustar largura das colunas para logo e dados
-    worksheet.getColumn('A').width = 20;
+    // Ajustar largura das colunas
+    worksheet.getColumn('A').width = 12;
     worksheet.getColumn('B').width = 15;
+    worksheet.getColumn('C').width = 15;
+    worksheet.getColumn('D').width = 15;
+    worksheet.getColumn('E').width = 15;
+    worksheet.getColumn('F').width = 15;
 
     await this.insertCompanyLogo(workbook, worksheet, quote.company.logoPath);
 
     const customer = quote.customerData;
-    const companyDocument = quote.company.cnpj || quote.company.taxId || '';
     const quoteDate = quote.date ? new Date(quote.date) : new Date();
 
-    // ===== CABEÇALHO (Rows 3-4) =====
-    // Data: G3 (título), H3 (dado)
-    worksheet.getCell('H3').value = quoteDate.toLocaleDateString('pt-BR');
-    worksheet.getCell('H3').font = { size: 9 };
+    // ===== CABEÇALHO - DADOS DA EMPRESA (C1:E4) =====
+    worksheet.getCell('C1').value = quote.company.name;
+    worksheet.getCell('C2').value = quote.company.address ?? '';
+    worksheet.getCell('C3').value = quote.company.contact ?? '';
+    worksheet.getCell('C4').value = quote.company.email ?? '';
 
-    // CNPJ da empresa: G4 (título), H4 (dado)
-    worksheet.getCell('H4').value = companyDocument;
-    worksheet.getCell('H4').font = { size: 9 };
+    // ===== DATA DO ORÇAMENTO (F6) =====
+    worksheet.getCell('F6').value = quoteDate.toLocaleDateString('pt-BR');
 
-    // ===== DADOS DO CLIENTE LADO ESQUERDO (Rows 7-12) =====
+    // ===== DADOS DO CLIENTE (Rows 6-9) =====
     if (customer) {
-      // Row 7: Cliente - A7 (título), B7 (dado)
-      worksheet.getCell('B7').value = customer.client ?? '';
+      // Row 6: NOME - B6:E6
+      worksheet.getCell('B6').value = customer.client ?? '';
 
-      // Row 8: Endereço - A8 (título), B8 (dado)
+      // Row 7: CNPJ - B7:E7
+      worksheet.getCell('B7').value = customer.document ?? '';
+
+      // Row 8: END. - B8:E8
       worksheet.getCell('B8').value = customer.address ?? '';
 
-      // Row 9: Cidade - A9 (título), B9 (dado)
-      worksheet.getCell('B9').value = customer.city ?? '';
+      // Row 9: A/C - B9:C9
+      worksheet.getCell('B9').value = customer.contact ?? '';
 
-      // Row 10: CNPJ/CPF - A10 (título), B10 (dado)
-      worksheet.getCell('B10').value = customer.document ?? '';
-
-      // Row 11: Contato - A11 (título), B11 (dado)
-      worksheet.getCell('B11').value = customer.contact ?? '';
-
-      // Row 12: Email - A12 (título), B12 (dado)
-      worksheet.getCell('B12').value = customer.email ?? '';
-
-      // ===== DADOS DO CLIENTE LADO DIREITO (Rows 7-12) =====
-      // Row 7: Fantasia - G7 (título), I7 (dado)
-      worksheet.getCell('I7').value = customer.fantasyName ?? customer.client ?? '';
-
-      // Row 8: Bairro - G8 (título), I8 (dado)
-      worksheet.getCell('I8').value = customer.district ?? '';
-
-      // Row 9: UF / CEP - G9 (título), I9 (dado)
-      worksheet.getCell('I9').value = `${customer.state ?? ''} / ${customer.postalCode ?? ''}`;
-
-      // Row 10: Inscr. Est. - G10 (título), I10 (dado)
-      worksheet.getCell('I10').value = customer.stateRegistration ?? '';
-
-      // Row 11: Telefone / WhatsApp - G11 (título), I11 (dado)
-      worksheet.getCell('I11').value = customer.phone ?? '';
-
-      // Row 12: Região - G12 (título), I12 (dado)
-      worksheet.getCell('I12').value = customer.region ?? '';
-
-      // ===== INFORMAÇÕES ADICIONAIS (Rows 16-18) =====
-      // Row 16: Frete - A16 (título), B16 (dado)
-      worksheet.getCell('B16').value = customer.freight ?? '';
-
-      // Row 16: Forma de pagamento - E16 (título), G16 (dado)
-      worksheet.getCell('G16').value = quote.paymentMethod;
-
-      // Row 17: Tabela de preço - A17 (título), B17 (dado)
-      worksheet.getCell('B17').value = customer.priceTable ?? '';
-
-      // Row 17: Vendedor - E17 (título), G17 (dado)
-      worksheet.getCell('G17').value = customer.salesperson ?? '';
-
-      // Row 18: Vendedor externo - A18 (título), B18 (dado)
-      worksheet.getCell('B18').value = customer.externalSalesperson ?? '';
-
-      // Row 18: Observação - E18 (título), G18 (dado)
-      // worksheet.getCell('G18').value = quote.observation ?? ''; // Se tiver campo de observação
+      // Row 9: Fone - D9:E9
+      worksheet.getCell('D9').value = customer.phone ?? '';
     }
 
-    // ===== PRODUTOS (Rows 22+) =====
+    // ===== CONDIÇÕES COMERCIAIS (Row 11) =====
+    // Forma de pagamento - C11
+    worksheet.getCell('C11').value = quote.paymentMethod ?? '';
+
+    // Prazo de entrega - F11
+    worksheet.getCell('F11').value = quote.deliveryTime ?? '';
+
+    // ===== PRODUTOS (Rows 15+) =====
     this.fillProducts(worksheet, quote.items);
 
     const arquivo = await workbook.xlsx.writeBuffer();
@@ -123,12 +94,23 @@ export class ExcelGeneratorSplashService {
   }
 
   private fillProducts(worksheet: ExcelJS.Worksheet, items: QuoteItem[]) {
-    const linhaInicial = 22;
-    const linhaTotalOriginal = this.findTotalRow(worksheet) ?? 27;
+    const linhaInicial = 15;
+    const linhaTotal = 56;
     const quantidadeProdutos = items.length;
-    const quantidadeLinhasModelo = Math.max(linhaTotalOriginal - linhaInicial, 1);
-    const linhasParaRemover = Math.max(quantidadeLinhasModelo - quantidadeProdutos, 0);
-    const linhasParaAdicionar = Math.max(quantidadeProdutos - quantidadeLinhasModelo, 0);
+    const linhasFinal = linhaTotal - 1; // Última linha de produto pode ser no máximo 55
+    const quantidadeLinhasDisponivel = linhasFinal - linhaInicial + 1;
+
+    // Ajustar quantidade de linhas
+    const linhasAtualmente = quantidadeLinhasDisponivel;
+    const diferenca = quantidadeProdutos - linhasAtualmente;
+
+    if (diferenca > 0) {
+      // Precisamos adicionar linhas
+      worksheet.spliceRows(linhaTotal, 0, ...Array.from({ length: diferenca }, () => []));
+    } else if (diferenca < 0) {
+      // Precisamos remover linhas
+      worksheet.spliceRows(linhaInicial + quantidadeProdutos, -diferenca);
+    }
 
     const linhaModelo = worksheet.getRow(linhaInicial);
 
@@ -139,24 +121,6 @@ export class ExcelGeneratorSplashService {
       const totalComDesconto = subtotal - subtotal * (discount / 100);
       return sum + totalComDesconto;
     }, 0);
-
-    // Inserir linhas antes do total (empurra a linha TOTAL GERAL para baixo,
-    // preservando seu estilo do template automaticamente)
-    if (linhasParaAdicionar > 0) {
-      worksheet.spliceRows(
-        linhaTotalOriginal,
-        0,
-        ...Array.from({ length: linhasParaAdicionar }, () => [])
-      );
-    }
-
-    // Remover linhas modelo excedentes (puxa a linha TOTAL GERAL para cima)
-    if (linhasParaRemover > 0) {
-      worksheet.spliceRows(linhaInicial + quantidadeProdutos, linhasParaRemover);
-    }
-
-    // O total agora fica sempre logo abaixo do último produto
-    const linhaTotal = linhaInicial + quantidadeProdutos;
 
     // Preencher produtos
     items.forEach((item, index) => {
@@ -169,58 +133,46 @@ export class ExcelGeneratorSplashService {
       linha.height = 16;
 
       // Copiar estilo da linha modelo
-      for (let col = 1; col <= 12; col++) {
+      for (let col = 1; col <= 6; col++) {
         const cell = linha.getCell(col);
         const modelCell = linhaModelo.getCell(col);
         cell.value = null;
         this.copyCellStyle(modelCell, cell);
       }
 
-      // Preencher dados
-      linha.getCell(1).value = item.code ?? index + 1; // A - Código
-      linha.getCell(2).value = item.reference ?? ''; // B - Referência
-      linha.getCell(3).value = item.product; // C - Descrição
-      linha.getCell(7).value = item.unit; // G - Unid.
-      linha.getCell(8).value = discount / 100; // H - Desc %
-      linha.getCell(9).value = item.quantity; // I - Qtde.
-      linha.getCell(10).value = item.unitPrice; // J - Vl. Unit.
-      linha.getCell(12).value = totalProduto; // L - Vl. Total
+      // Preencher dados - novo layout
+      // A: Item (número sequencial)
+      linha.getCell(1).value = index + 1;
+      // B: Quantidade
+      linha.getCell(2).value = item.quantity;
+      // C: Unidade
+      linha.getCell(3).value = item.unit ?? '';
+      // D: Descrição do produto
+      linha.getCell(4).value = item.product ?? '';
+      // E: Valor unitário
+      linha.getCell(5).value = item.unitPrice;
+      // F: Valor total
+      linha.getCell(6).value = totalProduto;
 
-      // Formatação - tudo alinhado à esquerda e sem negrito
-      for (let col of [1, 2, 3, 7, 8, 9, 10, 12]) {
+      // Formatação
+      for (let col of [1, 2, 3, 4, 5, 6]) {
         linha.getCell(col).alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
         linha.getCell(col).font = { size: 9, bold: false };
       }
 
       // Formatação numérica
-      linha.getCell(8).numFmt = '0.00%';
-      linha.getCell(10).numFmt = 'R$ #,##0.00';
-      linha.getCell(12).numFmt = 'R$ #,##0.00';
+      linha.getCell(2).numFmt = '0.00'; // Quantidade
+      linha.getCell(5).numFmt = 'R$ #,##0.00'; // Valor unitário
+      linha.getCell(6).numFmt = 'R$ #,##0.00'; // Valor total
 
       linha.commit();
     });
 
-    // Preencher o valor do total na linha que se moveu junto com o template
+    // Preencher o valor do total na linha 56
     const totalRow = worksheet.getRow(linhaTotal);
-    totalRow.getCell(12).value = total;
-    totalRow.getCell(12).numFmt = 'R$ #,##0.00';
+    totalRow.getCell(6).value = total;
+    totalRow.getCell(6).numFmt = 'R$ #,##0.00';
     totalRow.commit();
-  }
-
-  private findTotalRow(worksheet: ExcelJS.Worksheet) {
-    for (let rowNumber = 1; rowNumber <= worksheet.rowCount; rowNumber++) {
-      const row = worksheet.getRow(rowNumber);
-
-      for (let colNumber = 1; colNumber <= 12; colNumber++) {
-        const value = String(row.getCell(colNumber).value ?? '').trim().toLowerCase();
-
-        if (value.includes('total geral')) {
-          return rowNumber;
-        }
-      }
-    }
-
-    return undefined;
   }
 
   private copyCellStyle(source: ExcelJS.Cell, target: ExcelJS.Cell) {
@@ -250,11 +202,12 @@ export class ExcelGeneratorSplashService {
         extension: 'png'
       });
 
+      // Posicionar logo em A1:B4
       worksheet.addImage(logoImage, {
-        tl: { col: 2.40, row: 3.15 } as any,
-        ext: { width: 118, height: 118 }
+        tl: { col: 0, row: 0 } as any,
+        br: { col: 2, row: 4 } as any
       });
-      
+
     } catch {
       // Logo não encontrada, continuar sem ela
     }
