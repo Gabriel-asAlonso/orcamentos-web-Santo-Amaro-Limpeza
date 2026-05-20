@@ -28,22 +28,7 @@ export class ExcelGeneratorSplashService {
     }
 
     this.clearWorksheetRowGrouping(worksheet);
-
-    // Ajustar altura das linhas para logo
-    worksheet.getRow(1).height = 18;
-    worksheet.getRow(2).height = 18;
-    worksheet.getRow(3).height = 18;
-    worksheet.getRow(4).height = 18;
-
-    // Ajustar largura das colunas
-    worksheet.getColumn('A').width = 12;
-    worksheet.getColumn('B').width = 15;
-    worksheet.getColumn('C').width = 15;
-    worksheet.getColumn('D').width = 15;
-    worksheet.getColumn('E').width = 15;
-    worksheet.getColumn('F').width = 15;
-
-    await this.insertCompanyLogo(workbook, worksheet, quote.company.logoPath);
+    worksheet.views = [{ showGridLines: false }];
 
     const customer = quote.customerData;
     const quoteDate = quote.date ? new Date(quote.date) : new Date();
@@ -82,6 +67,8 @@ export class ExcelGeneratorSplashService {
     // Prazo de entrega - F11
     worksheet.getCell('F11').value = quote.deliveryTime ?? '';
 
+    await this.insertCompanyLogo(workbook, worksheet, quote.company.logoPath);
+
     // ===== PRODUTOS (Rows 15+) =====
     this.fillProducts(worksheet, quote.items);
 
@@ -95,32 +82,43 @@ export class ExcelGeneratorSplashService {
 
   private fillProducts(worksheet: ExcelJS.Worksheet, items: QuoteItem[]) {
     const linhaInicial = 15;
-    const linhaTotal = 56;
-    const quantidadeProdutos = items.length;
-    const linhasFinal = linhaTotal - 1; // Última linha de produto pode ser no máximo 55
-    const quantidadeLinhasDisponivel = linhasFinal - linhaInicial + 1;
+    const linhaTotalOriginal = 56;
+    const quantidadeProdutos = Math.max(items.length, 1);
+    const quantidadeLinhasModelo = Math.max(linhaTotalOriginal - linhaInicial, 1);
+    const linhasParaRemover = Math.max(quantidadeLinhasModelo - quantidadeProdutos, 0);
+    const linhasParaAdicionar = Math.max(quantidadeProdutos - quantidadeLinhasModelo, 0);
 
-    // Ajustar quantidade de linhas
-    const linhasAtualmente = quantidadeLinhasDisponivel;
-    const diferenca = quantidadeProdutos - linhasAtualmente;
-
-    if (diferenca > 0) {
-      // Precisamos adicionar linhas
-      worksheet.spliceRows(linhaTotal, 0, ...Array.from({ length: diferenca }, () => []));
-    } else if (diferenca < 0) {
-      // Precisamos remover linhas
-      worksheet.spliceRows(linhaInicial + quantidadeProdutos, -diferenca);
-    }
-
-    const linhaModelo = worksheet.getRow(linhaInicial);
+    // Capturar estilos ANTES de qualquer alteração
+    const estiloProduto = Array.from({ length: 6 }, (_, i) =>
+      this.snapshotStyle(worksheet.getRow(linhaInicial).getCell(i + 1))
+    );
+    const estiloTotalValor = this.snapshotStyle(worksheet.getCell(`F${linhaTotalOriginal}`));
+    const alturaProduto = worksheet.getRow(linhaInicial).height ?? 16;
 
     // Calcular total
     const total = items.reduce((sum, item) => {
       const discount = item.discount ?? 0;
       const subtotal = item.quantity * item.unitPrice;
-      const totalComDesconto = subtotal - subtotal * (discount / 100);
-      return sum + totalComDesconto;
+      return sum + (subtotal - subtotal * (discount / 100));
     }, 0);
+
+    // Remover todos os merges da região dinâmica
+    this.unmergeFrom(worksheet, linhaInicial);
+
+    // Ajustar a quantidade de linhas
+    if (linhasParaAdicionar > 0) {
+      worksheet.spliceRows(
+        linhaTotalOriginal,
+        0,
+        ...Array.from({ length: linhasParaAdicionar }, () => [])
+      );
+    }
+
+    if (linhasParaRemover > 0) {
+      worksheet.spliceRows(linhaInicial + quantidadeProdutos, linhasParaRemover);
+    }
+
+    const linhaTotal = linhaInicial + quantidadeProdutos;
 
     // Preencher produtos
     items.forEach((item, index) => {
@@ -130,57 +128,90 @@ export class ExcelGeneratorSplashService {
       const subtotal = item.quantity * item.unitPrice;
       const totalProduto = subtotal - subtotal * (discount / 100);
 
-      linha.height = 16;
+      linha.height = alturaProduto;
 
-      // Copiar estilo da linha modelo
+      // Aplicar o estilo capturado
       for (let col = 1; col <= 6; col++) {
         const cell = linha.getCell(col);
-        const modelCell = linhaModelo.getCell(col);
         cell.value = null;
-        this.copyCellStyle(modelCell, cell);
+        this.applyStyle(cell, estiloProduto[col - 1]);
       }
 
-      // Preencher dados - novo layout
-      // A: Item (número sequencial)
-      linha.getCell(1).value = index + 1;
-      // B: Quantidade
-      linha.getCell(2).value = item.quantity;
-      // C: Unidade
-      linha.getCell(3).value = item.unit ?? '';
-      // D: Descrição do produto
-      linha.getCell(4).value = item.product ?? '';
-      // E: Valor unitário
-      linha.getCell(5).value = item.unitPrice;
-      // F: Valor total
-      linha.getCell(6).value = totalProduto;
-
-      // Formatação
-      for (let col of [1, 2, 3, 4, 5, 6]) {
-        linha.getCell(col).alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
-        linha.getCell(col).font = { size: 9, bold: false };
-      }
+      // Preencher dados
+      linha.getCell(1).value = index + 1; // A - Item
+      linha.getCell(2).value = item.quantity; // B - Quantidade
+      linha.getCell(3).value = item.unit ?? ''; // C - Unidade
+      linha.getCell(4).value = item.product ?? ''; // D - Descrição
+      linha.getCell(5).value = item.unitPrice; // E - Valor unitário
+      linha.getCell(6).value = totalProduto; // F - Valor total
 
       // Formatação numérica
-      linha.getCell(2).numFmt = '0.00'; // Quantidade
-      linha.getCell(5).numFmt = 'R$ #,##0.00'; // Valor unitário
-      linha.getCell(6).numFmt = 'R$ #,##0.00'; // Valor total
+      linha.getCell(2).numFmt = '#,##0.##';
+      linha.getCell(5).numFmt = 'R$ #,##0.00';
+      linha.getCell(6).numFmt = 'R$ #,##0.00';
 
       linha.commit();
     });
 
-    // Preencher o valor do total na linha 56
-    const totalRow = worksheet.getRow(linhaTotal);
-    totalRow.getCell(6).value = total;
-    totalRow.getCell(6).numFmt = 'R$ #,##0.00';
-    totalRow.commit();
+    // Limpar total + rodapé
+    this.clearFrom(worksheet, linhaTotal);
+
+    // Reconstruir o total
+    const totalValor = worksheet.getCell(`F${linhaTotal}`);
+    totalValor.value = total;
+    this.applyStyle(totalValor, estiloTotalValor);
+    totalValor.numFmt = 'R$ #,##0.00';
+
+    worksheet.getRow(linhaTotal).height = 16;
   }
 
-  private copyCellStyle(source: ExcelJS.Cell, target: ExcelJS.Cell) {
-    target.font = { ...source.font };
-    target.alignment = { ...source.alignment };
-    target.border = { ...source.border };
-    target.fill = { ...source.fill };
-    target.numFmt = source.numFmt;
+  private snapshotStyle(cell: ExcelJS.Cell) {
+    return {
+      font: cell.font ? { ...cell.font } : undefined,
+      alignment: cell.alignment ? { ...cell.alignment } : undefined,
+      border: cell.border ? { ...cell.border } : undefined,
+      fill: cell.fill ? { ...cell.fill } : undefined,
+      numFmt: cell.numFmt
+    };
+  }
+
+  private applyStyle(
+    cell: ExcelJS.Cell,
+    style: ReturnType<ExcelGeneratorSplashService['snapshotStyle']>
+  ) {
+    if (style.font) cell.font = { ...style.font };
+    if (style.alignment) cell.alignment = { ...style.alignment };
+    if (style.border) cell.border = { ...style.border };
+    if (style.fill) cell.fill = { ...style.fill };
+    if (style.numFmt) cell.numFmt = style.numFmt;
+  }
+
+  private clearFrom(worksheet: ExcelJS.Worksheet, startRow: number) {
+    const ultimaLinha = Math.max(worksheet.rowCount, startRow) + 50;
+
+    for (let rowNumber = startRow; rowNumber <= ultimaLinha; rowNumber++) {
+      const row = worksheet.getRow(rowNumber);
+
+      for (let colNumber = 1; colNumber <= 6; colNumber++) {
+        const cell = row.getCell(colNumber);
+        cell.value = null;
+        cell.style = {};
+      }
+    }
+  }
+
+  private unmergeFrom(worksheet: ExcelJS.Worksheet, startRow: number) {
+    const merges: string[] = [...(((worksheet as any).model?.merges as string[]) ?? [])];
+
+    for (const range of merges) {
+      const match = /^[A-Z]+(\d+):[A-Z]+\d+$/.exec(range);
+
+      if (match && Number(match[1]) >= startRow) {
+        try {
+          worksheet.unMergeCells(range);
+        } catch {}
+      }
+    }
   }
 
   private clearWorksheetRowGrouping(worksheet: ExcelJS.Worksheet) {
