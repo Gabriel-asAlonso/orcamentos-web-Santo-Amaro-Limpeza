@@ -281,7 +281,6 @@ export class ExcelGeneratorSplashService {
       const row = worksheet.getRow(rowNumber);
       (row as any).outlineLevel = 0;
       row.hidden = false;
-      (row as any).collapsed = false;
     }
   }
 }
