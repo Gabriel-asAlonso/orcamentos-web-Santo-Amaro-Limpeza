@@ -12,9 +12,12 @@ type SheetRow = Array<string | number>;
 export class ExcelImporterService {
   private readonly fieldLabelAliases = [
     'cliente',
+    'nome',
     'fantasia',
     'endereco',
     'enderec',
+    'end.',
+    'end',
     'bairro',
     'cidade',
     'uf',
@@ -32,6 +35,8 @@ export class ExcelImporterService {
     'tabela preco',
     'tabela de preco',
     'contato',
+    'at.',
+    'at',
     'email',
     'e-mail',
     'vendedor',
@@ -48,7 +53,8 @@ export class ExcelImporterService {
     'prazo de entrega',
     'entrega',
     'prazo de pagamento',
-    'prazo pagamento'
+    'prazo pagamento',
+    'data'
   ];
 
   async importProducts(file: File): Promise<ExcelImportResult> {
