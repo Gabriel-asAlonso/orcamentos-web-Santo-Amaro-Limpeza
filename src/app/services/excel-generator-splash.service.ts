@@ -194,7 +194,19 @@ export class ExcelGeneratorSplashService {
     totalValor.numFmt = 'R$ #,##0.00';
     totalValor.font = { ...(totalValor.font || {}), bold: true };
 
+    // Adicionar borda inferior (preta, fina) em toda a linha do total (A-F)
+    const bordaInferior: Partial<ExcelJS.Borders> = {
+      bottom: { style: 'thin', color: { argb: 'FF000000' } }
+    };
+    for (let col = 1; col <= 6; col++) {
+      const cell = worksheet.getRow(linhaTotal).getCell(col);
+      cell.border = { ...(cell.border || {}), ...bordaInferior };
+    }
+
     worksheet.getRow(linhaTotal).height = 20;
+
+    // Limpar agrupamento de todas as linhas após o splice
+    this.clearWorksheetRowGrouping(worksheet);
   }
 
   private snapshotStyle(cell: ExcelJS.Cell) {
@@ -258,5 +270,14 @@ export class ExcelGeneratorSplashService {
 
   private clearWorksheetRowGrouping(worksheet: ExcelJS.Worksheet) {
     (worksheet as any).rowOutlineLevel = 0;
+
+    // Limpar agrupamento de cada linha individualmente
+    const ultimaLinha = Math.max(worksheet.rowCount, 100);
+    for (let rowNumber = 1; rowNumber <= ultimaLinha; rowNumber++) {
+      const row = worksheet.getRow(rowNumber);
+      (row as any).outlineLevel = 0;
+      row.hidden = false;
+      (row as any).collapsed = false;
+    }
   }
 }
