@@ -231,7 +231,10 @@ export class ExcelGeneratorSplashService {
   }
 
   private clearFrom(worksheet: ExcelJS.Worksheet, startRow: number) {
-    const ultimaLinha = Math.max(worksheet.rowCount, startRow) + 50;
+    // Usar actualRowCount para limitar às linhas com conteúdo real,
+    // evitando iterar milhares de linhas vazias do template
+    const actualRowCount = (worksheet as any).actualRowCount ?? worksheet.rowCount;
+    const ultimaLinha = Math.max(actualRowCount, startRow) + 5;
 
     for (let rowNumber = startRow; rowNumber <= ultimaLinha; rowNumber++) {
       const row = worksheet.getRow(rowNumber);
@@ -271,8 +274,9 @@ export class ExcelGeneratorSplashService {
   private clearWorksheetRowGrouping(worksheet: ExcelJS.Worksheet) {
     (worksheet as any).rowOutlineLevel = 0;
 
-    // Limpar agrupamento de cada linha individualmente
-    const ultimaLinha = Math.max(worksheet.rowCount, 100);
+    // Limpar agrupamento apenas das linhas com conteúdo real
+    const actualRowCount = (worksheet as any).actualRowCount ?? worksheet.rowCount;
+    const ultimaLinha = Math.min(Math.max(actualRowCount, 60), 200);
     for (let rowNumber = 1; rowNumber <= ultimaLinha; rowNumber++) {
       const row = worksheet.getRow(rowNumber);
       (row as any).outlineLevel = 0;
