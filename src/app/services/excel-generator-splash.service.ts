@@ -170,7 +170,7 @@ export class ExcelGeneratorSplashService {
       linha.getCell(6).value = totalProduto;         // F - Valor total
 
       // Formatação numérica
-      linha.getCell(2).numFmt = '#,##0.##';
+      linha.getCell(2).numFmt = '0';
       linha.getCell(5).numFmt = 'R$ #,##0.00';
       linha.getCell(6).numFmt = 'R$ #,##0.00';
 
