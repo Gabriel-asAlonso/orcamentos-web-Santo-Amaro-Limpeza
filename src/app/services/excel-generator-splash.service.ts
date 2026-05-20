@@ -33,29 +33,34 @@ export class ExcelGeneratorSplashService {
     const customer = quote.customerData;
     const quoteDate = quote.date ? new Date(quote.date) : new Date();
 
-    // ===== CABEÇALHO - DADOS DA EMPRESA =====
-    // C1: Nome | C2: Endereço | C3: Contato | C4: Email
-    worksheet.getCell('C1').value = quote.company.name;
-    worksheet.getCell('C2').value = quote.company.address ?? '';
-    worksheet.getCell('C3').value = quote.company.contact ?? '';
-    worksheet.getCell('C4').value = quote.company.email ?? '';
-
     // ===== DATA DO ORÇAMENTO =====
-    worksheet.getCell('F6').value = quoteDate.toLocaleDateString('pt-BR');
+    // F6 contém a data (E6 tem o rótulo "DATA:" do template)
+    const dia = String(quoteDate.getDate()).padStart(2, '0');
+    const mes = String(quoteDate.getMonth() + 1).padStart(2, '0');
+    const ano = quoteDate.getFullYear();
+    const dataCell = worksheet.getCell('F6');
+    dataCell.numFmt = '@';
+    dataCell.value = `${dia}/${mes}/${ano}`;
 
     // ===== DADOS DO CLIENTE =====
     if (customer) {
+      // B6:D6 mergido - cliente
       worksheet.getCell('B6').value = customer.client ?? '';
+      // B7:C7 mergido - cnpj
       worksheet.getCell('B7').value = customer.document ?? '';
+      // B8:F8 mergido - endereço
       worksheet.getCell('B8').value = customer.address ?? '';
+      // B9:C9 mergido - A/C (contato)
       worksheet.getCell('B9').value = customer.contact ?? '';
-      worksheet.getCell('D9').value = customer.phone ?? '';
+      // E9 - telefone (D9 tem rótulo "Fone: ")
+      worksheet.getCell('E9').value = customer.phone ?? '';
     }
 
     // ===== CONDIÇÕES COMERCIAIS =====
-    // C11: Forma de pagamento | F11: Prazo de entrega
-    worksheet.getCell('C11').value = quote.paymentMethod ?? '';
-    worksheet.getCell('F11').value = quote.deliveryTime ?? '';
+    // A11:C11 mergido - texto completo "FORMA DE PAG.: <valor>"
+    worksheet.getCell('A11').value = `FORMA DE PAG.:  ${quote.paymentMethod ?? ''}`;
+    // D11 - texto completo "PRAZO DE ENTREGA: <valor>"
+    worksheet.getCell('D11').value = `PRAZO DE ENTREGA:  ${quote.deliveryTime ?? ''}`;
 
     // ===== PRODUTOS =====
     this.fillProducts(worksheet, quote.items);
@@ -69,26 +74,34 @@ export class ExcelGeneratorSplashService {
   }
 
   private fillProducts(worksheet: ExcelJS.Worksheet, items: QuoteItem[]) {
-    const linhaInicial = 20;
-    const linhaTotalOriginal = this.findTotalRow(worksheet) ?? 27;
+    const linhaInicial = 15;
+    const linhaTotalOriginal = 55; // Total está em A55:E56 (rótulo) e F55:F56 (valor)
     const quantidadeProdutos = Math.max(items.length, 1);
     const quantidadeLinhasModelo = Math.max(linhaTotalOriginal - linhaInicial, 1);
     const linhasParaRemover = Math.max(quantidadeLinhasModelo - quantidadeProdutos, 0);
     const linhasParaAdicionar = Math.max(quantidadeProdutos - quantidadeLinhasModelo, 0);
 
+    // Capturar estilos da primeira linha de produto (15)
     const estiloProduto = Array.from({ length: 6 }, (_, i) =>
       this.snapshotStyle(worksheet.getRow(linhaInicial).getCell(i + 1))
     );
     const alturaProduto = worksheet.getRow(linhaInicial).height ?? 16;
 
+    // Capturar estilos do total (linha 55)
+    const estiloTotalLabel = this.snapshotStyle(worksheet.getCell(`A${linhaTotalOriginal}`));
+    const estiloTotalValor = this.snapshotStyle(worksheet.getCell(`F${linhaTotalOriginal}`));
+
+    // Calcular total
     const total = items.reduce((sum, item) => {
       const discount = item.discount ?? 0;
       const subtotal = item.quantity * item.unitPrice;
       return sum + (subtotal - subtotal * (discount / 100));
     }, 0);
 
+    // Desfazer merges da região dos produtos para baixo
     this.unmergeFrom(worksheet, linhaInicial);
 
+    // Ajustar quantidade de linhas
     if (linhasParaAdicionar > 0) {
       worksheet.spliceRows(
         linhaTotalOriginal,
@@ -103,6 +116,7 @@ export class ExcelGeneratorSplashService {
 
     const linhaTotal = linhaInicial + quantidadeProdutos;
 
+    // Preencher produtos
     items.forEach((item, index) => {
       const rowNumber = linhaInicial + index;
       const linha = worksheet.getRow(rowNumber);
@@ -112,19 +126,22 @@ export class ExcelGeneratorSplashService {
 
       linha.height = alturaProduto;
 
+      // Aplicar estilo capturado
       for (let col = 1; col <= 6; col++) {
         const cell = linha.getCell(col);
         cell.value = null;
         this.applyStyle(cell, estiloProduto[col - 1]);
       }
 
-      linha.getCell(1).value = index + 1;
-      linha.getCell(2).value = item.quantity;
-      linha.getCell(3).value = item.unit ?? '';
-      linha.getCell(4).value = item.product ?? '';
-      linha.getCell(5).value = item.unitPrice;
-      linha.getCell(6).value = totalProduto;
+      // Preencher dados
+      linha.getCell(1).value = index + 1;            // A - Item
+      linha.getCell(2).value = item.quantity;        // B - Quantidade
+      linha.getCell(3).value = item.unit ?? '';      // C - Unidade
+      linha.getCell(4).value = item.product ?? '';   // D - Descrição
+      linha.getCell(5).value = item.unitPrice;       // E - Valor unitário
+      linha.getCell(6).value = totalProduto;         // F - Valor total
 
+      // Formatação numérica
       linha.getCell(2).numFmt = '#,##0.##';
       linha.getCell(5).numFmt = 'R$ #,##0.00';
       linha.getCell(6).numFmt = 'R$ #,##0.00';
@@ -132,35 +149,24 @@ export class ExcelGeneratorSplashService {
       linha.commit();
     });
 
+    // Limpar resíduos abaixo da última linha de produto
     this.clearFrom(worksheet, linhaTotal);
 
-    // Adicionar rótulo "Total Geral" em D:E
-    const totalLabel = worksheet.getCell(`D${linhaTotal}`);
+    // Reconstruir o total (mergido A:E para o label, F para o valor)
+    this.safeMerge(worksheet, `A${linhaTotal}:E${linhaTotal}`);
+    const totalLabel = worksheet.getCell(`A${linhaTotal}`);
     totalLabel.value = 'Total Geral';
+    this.applyStyle(totalLabel, estiloTotalLabel);
     totalLabel.alignment = { horizontal: 'right', vertical: 'middle' };
+    totalLabel.font = { ...(totalLabel.font || {}), bold: true };
 
-    // Adicionar valor total em F
     const totalValor = worksheet.getCell(`F${linhaTotal}`);
     totalValor.value = total;
+    this.applyStyle(totalValor, estiloTotalValor);
     totalValor.numFmt = 'R$ #,##0.00';
+    totalValor.font = { ...(totalValor.font || {}), bold: true };
 
-    worksheet.getRow(linhaTotal).height = 16;
-  }
-
-  private findTotalRow(worksheet: ExcelJS.Worksheet) {
-    for (let rowNumber = 1; rowNumber <= worksheet.rowCount; rowNumber++) {
-      const row = worksheet.getRow(rowNumber);
-
-      for (let colNumber = 1; colNumber <= 6; colNumber++) {
-        const value = String(row.getCell(colNumber).value ?? '').trim().toLowerCase();
-
-        if (value.includes('total geral')) {
-          return rowNumber;
-        }
-      }
-    }
-
-    return undefined;
+    worksheet.getRow(linhaTotal).height = 20;
   }
 
   private snapshotStyle(cell: ExcelJS.Cell) {
@@ -210,6 +216,16 @@ export class ExcelGeneratorSplashService {
         } catch {}
       }
     }
+  }
+
+  private safeMerge(worksheet: ExcelJS.Worksheet, range: string) {
+    try {
+      worksheet.unMergeCells(range);
+    } catch {}
+
+    try {
+      worksheet.mergeCells(range);
+    } catch {}
   }
 
   private clearWorksheetRowGrouping(worksheet: ExcelJS.Worksheet) {
