@@ -33,14 +33,6 @@ export class ExcelGeneratorSplashService {
     const customer = quote.customerData;
     const quoteDate = quote.date ? new Date(quote.date) : new Date();
 
-    // DEBUG temporário: imprime os dados que estão chegando
-    console.log('[Splash Excel] Customer recebido:', customer);
-    console.log('[Splash Excel] Quote info:', {
-      label: quote.label,
-      paymentMethod: quote.paymentMethod,
-      deliveryTime: quote.deliveryTime
-    });
-
     // ===== DATA DO ORÇAMENTO =====
     // F6 contém a data (E6 tem o rótulo "DATA:" do template)
     const dia = String(quoteDate.getDate()).padStart(2, '0');
