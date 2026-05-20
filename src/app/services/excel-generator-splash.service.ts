@@ -34,6 +34,7 @@ export class ExcelGeneratorSplashService {
     const quoteDate = quote.date ? new Date(quote.date) : new Date();
 
     // ===== CABEÇALHO - DADOS DA EMPRESA =====
+    // C1: Nome | C2: Endereço | C3: Contato | C4: Email
     worksheet.getCell('C1').value = quote.company.name;
     worksheet.getCell('C2').value = quote.company.address ?? '';
     worksheet.getCell('C3').value = quote.company.contact ?? '';
@@ -48,10 +49,11 @@ export class ExcelGeneratorSplashService {
       worksheet.getCell('B7').value = customer.document ?? '';
       worksheet.getCell('B8').value = customer.address ?? '';
       worksheet.getCell('B9').value = customer.contact ?? '';
-      worksheet.getCell('C9').value = customer.phone ?? '';
+      worksheet.getCell('D9').value = customer.phone ?? '';
     }
 
     // ===== CONDIÇÕES COMERCIAIS =====
+    // C11: Forma de pagamento | F11: Prazo de entrega
     worksheet.getCell('C11').value = quote.paymentMethod ?? '';
     worksheet.getCell('F11').value = quote.deliveryTime ?? '';
 
@@ -132,9 +134,16 @@ export class ExcelGeneratorSplashService {
 
     this.clearFrom(worksheet, linhaTotal);
 
+    // Adicionar rótulo "Total Geral" em D:E
+    const totalLabel = worksheet.getCell(`D${linhaTotal}`);
+    totalLabel.value = 'Total Geral';
+    totalLabel.alignment = { horizontal: 'right', vertical: 'middle' };
+
+    // Adicionar valor total em F
     const totalValor = worksheet.getCell(`F${linhaTotal}`);
     totalValor.value = total;
     totalValor.numFmt = 'R$ #,##0.00';
+
     worksheet.getRow(linhaTotal).height = 16;
   }
 
