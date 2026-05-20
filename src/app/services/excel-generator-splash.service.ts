@@ -57,10 +57,38 @@ export class ExcelGeneratorSplashService {
     }
 
     // ===== CONDIÇÕES COMERCIAIS =====
-    // A11:C11 mergido - texto completo "FORMA DE PAG.: <valor>"
-    worksheet.getCell('A11').value = `FORMA DE PAG.:  ${quote.paymentMethod ?? ''}`;
-    // D11 - texto completo "PRAZO DE ENTREGA: <valor>"
-    worksheet.getCell('D11').value = `PRAZO DE ENTREGA:  ${quote.deliveryTime ?? ''}`;
+    // A11:C11 mergido - rótulo em negrito + valor sem negrito (rich text)
+    const formaPagCell = worksheet.getCell('A11');
+    const formaPagFont = formaPagCell.font || {};
+    formaPagCell.value = {
+      richText: [
+        { text: 'FORMA DE PAG.:  ', font: { ...formaPagFont, bold: true } },
+        { text: `${quote.paymentMethod ?? ''}`, font: { ...formaPagFont, bold: false } }
+      ]
+    };
+    formaPagCell.alignment = {
+      ...(formaPagCell.alignment || {}),
+      wrapText: true,
+      vertical: 'middle'
+    };
+
+    // D11 - rótulo em negrito + valor sem negrito (rich text)
+    const prazoCell = worksheet.getCell('D11');
+    const prazoFont = prazoCell.font || {};
+    prazoCell.value = {
+      richText: [
+        { text: 'PRAZO DE ENTREGA:  ', font: { ...prazoFont, bold: true } },
+        { text: `${quote.deliveryTime ?? ''}`, font: { ...prazoFont, bold: false } }
+      ]
+    };
+    prazoCell.alignment = {
+      ...(prazoCell.alignment || {}),
+      wrapText: true,
+      vertical: 'middle'
+    };
+
+    // Permitir altura automática para o texto quebrar
+    worksheet.getRow(11).height = 40;
 
     // ===== PRODUTOS =====
     this.fillProducts(worksheet, quote.items);
