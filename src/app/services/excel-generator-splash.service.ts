@@ -274,10 +274,12 @@ export class ExcelGeneratorSplashService {
   private clearWorksheetRowGrouping(worksheet: ExcelJS.Worksheet) {
     (worksheet as any).rowOutlineLevel = 0;
 
-    // Limpar agrupamento apenas das linhas com conteúdo real
+    // Limpar agrupamento apenas das linhas da tabela de produtos pra baixo
+    // (linhas 1-13 do cabeçalho não precisam ser tocadas, evitando
+    // qualquer interferência com conteúdo da empresa em D1:F4)
     const actualRowCount = (worksheet as any).actualRowCount ?? worksheet.rowCount;
     const ultimaLinha = Math.min(Math.max(actualRowCount, 60), 200);
-    for (let rowNumber = 1; rowNumber <= ultimaLinha; rowNumber++) {
+    for (let rowNumber = 14; rowNumber <= ultimaLinha; rowNumber++) {
       const row = worksheet.getRow(rowNumber);
       (row as any).outlineLevel = 0;
       row.hidden = false;
