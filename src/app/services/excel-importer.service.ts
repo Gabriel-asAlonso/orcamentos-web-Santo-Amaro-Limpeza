@@ -260,9 +260,9 @@ export class ExcelImporterService {
 
   private extractCustomerData(rows: SheetRow[]): CustomerData | undefined {
     const customerData: CustomerData = {
-      client: this.findFieldValue(rows, ['cliente']),
+      client: this.findFieldValue(rows, ['cliente', 'nome']),
       fantasyName: this.findFieldValue(rows, ['fantasia']),
-      address: this.findFieldValue(rows, ['endereco', 'enderec']),
+      address: this.findFieldValue(rows, ['endereco', 'enderec', 'end.', 'end']),
       district: this.findFieldValue(rows, ['bairro']),
       city: this.findFieldValue(rows, ['cidade']),
       state: this.findFieldValue(rows, ['uf']),
@@ -274,7 +274,7 @@ export class ExcelImporterService {
       phone: this.findFieldValue(rows, ['fone', 'telefone']),
       whatsapp: this.findFieldValue(rows, ['whatsapp']),
       priceTable: this.findFieldValue(rows, ['tabela preco', 'tabela de preco']),
-      contact: this.findFieldValue(rows, ['contato']),
+      contact: this.findFieldValue(rows, ['contato', 'at.', 'at']),
       email: this.findFieldValue(rows, ['email', 'e-mail']),
       salesperson: this.findFieldValue(rows, ['vendedor']),
       externalSalesperson: this.findFieldValue(rows, ['ven. externo', 'vendedor externo'])
