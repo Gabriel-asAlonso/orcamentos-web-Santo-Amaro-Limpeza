@@ -196,11 +196,18 @@ export class ExcelGeneratorPegLimpService {
     cell: ExcelJS.Cell,
     style: ReturnType<ExcelGeneratorPegLimpService['snapshotStyle']>
   ) {
-    if (style.font) cell.font = { ...style.font };
-    if (style.alignment) cell.alignment = { ...style.alignment };
-    if (style.border) cell.border = { ...style.border };
-    if (style.fill) cell.fill = { ...style.fill };
-    if (style.numFmt) cell.numFmt = style.numFmt;
+    // Usar cell.style = {...} ao invés de propriedades individuais.
+    // O ExcelJS otimiza estilos por ID interno; quando setamos propriedades
+    // individuais (cell.fill = X), múltiplas células podem acabar compartilhando
+    // o mesmo ID e o fill alternado é perdido. Setando cell.style força a
+    // criação de um novo estilo único por célula.
+    const newStyle: any = { ...cell.style };
+    if (style.font) newStyle.font = JSON.parse(JSON.stringify(style.font));
+    if (style.alignment) newStyle.alignment = JSON.parse(JSON.stringify(style.alignment));
+    if (style.border) newStyle.border = JSON.parse(JSON.stringify(style.border));
+    if (style.fill) newStyle.fill = JSON.parse(JSON.stringify(style.fill));
+    if (style.numFmt) newStyle.numFmt = style.numFmt;
+    cell.style = newStyle;
   }
 
   /**
