@@ -61,8 +61,8 @@ export class ExcelGeneratorPegLimpService {
       vertical: 'middle'
     };
 
-    // F70 - rótulo + valor "PRAZO DE ENTREGA: <valor>"
-    const prazoCell = worksheet.getCell('F70');
+    // E70 - rótulo + valor "PRAZO DE ENTREGA: <valor>"
+    const prazoCell = worksheet.getCell('E70');
     const prazoFont = prazoCell.font || {};
     prazoCell.value = {
       richText: [
@@ -89,19 +89,19 @@ export class ExcelGeneratorPegLimpService {
 
   private fillProducts(worksheet: ExcelJS.Worksheet, items: QuoteItem[]) {
     const linhaInicial = 14;
-    // Totais ficam em G65 (SUB-TOTAL), G66 (DESCONTO), G67 (FRETE), G68 (TOTAL)
+    // Totais ficam em F65 (SUB-TOTAL), F66 (DESCONTO), F67 (FRETE), F68 (TOTAL)
     const linhaSubTotal = 65;
     const quantidadeProdutos = Math.max(items.length, 1);
     const quantidadeLinhasModelo = Math.max(linhaSubTotal - linhaInicial, 1);
     const linhasParaRemover = Math.max(quantidadeLinhasModelo - quantidadeProdutos, 0);
     const linhasParaAdicionar = Math.max(quantidadeProdutos - quantidadeLinhasModelo, 0);
 
-    // Capturar dois estilos: linha branca (14) e linha cinza (19)
-    // para criar alternância zebra
-    const estiloBranco = Array.from({ length: 6 }, (_, c) =>
+    // Capturar dois estilos: linha branca (14) e linha cinza (19) para alternância zebra
+    // Agora são 5 colunas: B (ITEM), C (QTDE), D (DESCRIÇÃO), E (VALOR UNIT), F (VALOR TOTAL)
+    const estiloBranco = Array.from({ length: 5 }, (_, c) =>
       this.snapshotStyle(worksheet.getRow(14).getCell(c + 2))
     );
-    const estiloCinza = Array.from({ length: 6 }, (_, c) =>
+    const estiloCinza = Array.from({ length: 5 }, (_, c) =>
       this.snapshotStyle(worksheet.getRow(19).getCell(c + 2))
     );
     const alturaProduto = worksheet.getRow(linhaInicial).height ?? 16;
@@ -144,41 +144,38 @@ export class ExcelGeneratorPegLimpService {
       // Alternância zebra: linhas pares (0, 2, 4...) brancas, ímpares (1, 3, 5...) cinzas
       const estiloLinha = index % 2 === 0 ? estiloBranco : estiloCinza;
 
-      // Aplicar estilo capturado - colunas B (2) a G (7)
-      for (let col = 2; col <= 7; col++) {
+      // Aplicar estilo capturado - colunas B (2) a F (6)
+      for (let col = 2; col <= 6; col++) {
         const cell = linha.getCell(col);
         cell.value = null;
         this.applyStyle(cell, estiloLinha[col - 2]);
       }
 
-      // Preencher dados (B=Item, C=Referência, D=Qtde, E=Descrição, F=Vl Unit, G=Vl Total)
-      linha.getCell(2).value = index + 1;                    // B - ITEM
-      linha.getCell(3).value = item.reference ?? item.code ?? ''; // C - REFERÊNCIA
-      linha.getCell(4).value = item.quantity;                // D - QTDE
-      linha.getCell(5).value = item.product ?? '';           // E - DESCRIÇÃO
-      linha.getCell(6).value = item.unitPrice;               // F - VALOR UNIT
-      linha.getCell(7).value = totalProduto;                 // G - VALOR TOTAL
+      // Preencher dados (B=Item, C=Qtde, D=Descrição, E=Vl Unit, F=Vl Total)
+      linha.getCell(2).value = index + 1;             // B - ITEM
+      linha.getCell(3).value = item.quantity;         // C - QTDE
+      linha.getCell(4).value = item.product ?? '';    // D - DESCRIÇÃO
+      linha.getCell(5).value = item.unitPrice;        // E - VALOR UNIT
+      linha.getCell(6).value = totalProduto;          // F - VALOR TOTAL
 
       // Formatação numérica
-      linha.getCell(4).numFmt = '0';
+      linha.getCell(3).numFmt = '0';
+      linha.getCell(5).numFmt = 'R$ #,##0.00';
       linha.getCell(6).numFmt = 'R$ #,##0.00';
-      linha.getCell(7).numFmt = 'R$ #,##0.00';
 
       linha.commit();
     });
 
     // Atualizar o SUB-TOTAL e TOTAL nas linhas após o ajuste
-    // Após o splice, as linhas se deslocam: linhaSubTotal agora está em
-    // (linhaInicial + quantidadeProdutos) se houve adição, ou no original se removeu
     const novaLinhaSubTotal = linhaInicial + quantidadeProdutos;
 
-    // Atualizar SUB-TOTAL
-    const subTotalCell = worksheet.getCell(`G${novaLinhaSubTotal}`);
+    // Atualizar SUB-TOTAL (coluna F agora)
+    const subTotalCell = worksheet.getCell(`F${novaLinhaSubTotal}`);
     subTotalCell.value = total;
     subTotalCell.numFmt = 'R$ #,##0.00';
 
-    // Atualizar TOTAL (linha SUB-TOTAL + 3)
-    const totalCell = worksheet.getCell(`G${novaLinhaSubTotal + 3}`);
+    // Atualizar TOTAL (linha SUB-TOTAL + 3, coluna F)
+    const totalCell = worksheet.getCell(`F${novaLinhaSubTotal + 3}`);
     totalCell.value = total;
     totalCell.numFmt = 'R$ #,##0.00';
   }
