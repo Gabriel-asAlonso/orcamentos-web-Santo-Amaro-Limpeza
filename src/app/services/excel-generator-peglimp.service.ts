@@ -34,11 +34,11 @@ export class ExcelGeneratorPegLimpService {
     const quoteDate = quote.date ? new Date(quote.date) : new Date();
 
     // ===== DATA DO ORÇAMENTO =====
-    // F6 = "DATA: " (rótulo) | G6 = data
+    // E6 = "DATA: " (rótulo) | F6 = data
     const dia = String(quoteDate.getDate()).padStart(2, '0');
     const mes = String(quoteDate.getMonth() + 1).padStart(2, '0');
     const ano = quoteDate.getFullYear();
-    const dataCell = worksheet.getCell('G6');
+    const dataCell = worksheet.getCell('F6');
     dataCell.numFmt = '@';
     dataCell.value = `${dia}/${mes}/${ano}`;
 
