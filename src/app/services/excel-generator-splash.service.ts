@@ -48,15 +48,35 @@ export class ExcelGeneratorSplashService {
     // ter dados de exemplo ou ficar vazio se o template foi limpo).
     if (customer) {
       if (customer.client) {
-        worksheet.getCell('B6').value = customer.client;
+        const b6 = worksheet.getCell('B6');
+        // Limpa caracteres de quebra de linha (\r, \n) que podem
+        // vir no nome importado e causar quebra visual
+        b6.value = String(customer.client).replace(/[\r\n]+/g, ' ').trim();
+        b6.alignment = {
+          ...(b6.alignment || {}),
+          wrapText: false,
+          vertical: 'middle'
+        };
       }
       if (customer.document) {
-        worksheet.getCell('B7').value = customer.document;
+        worksheet.getCell('B7').value = String(customer.document).replace(/[\r\n]+/g, ' ').trim();
       }
       if (customer.address) {
-        worksheet.getCell('B8').value = customer.address;
+        const b8 = worksheet.getCell('B8');
+        b8.value = String(customer.address).replace(/[\r\n]+/g, ' ').trim();
+        b8.alignment = {
+          ...(b8.alignment || {}),
+          wrapText: false,
+          vertical: 'middle'
+        };
       }
     }
+
+    // Garantir altura adequada para as linhas do cliente
+    worksheet.getRow(6).height = 18;
+    worksheet.getRow(7).height = 16;
+    worksheet.getRow(8).height = 16;
+    worksheet.getRow(9).height = 16;
 
     // ===== CONDIÇÕES COMERCIAIS =====
     // A11:C11 mergido - rótulo em negrito + valor sem negrito (rich text)
