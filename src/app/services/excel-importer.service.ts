@@ -114,7 +114,8 @@ export class ExcelImporterService {
           !produto.toLowerCase().includes('total geral');
       })
       .map((row, index) => {
-        const quantity = this.parseNumber(row[quantidadeIndex]);
+        // Quantidade sempre inteira (nunca aceita valores quebrados como 22,22)
+        const quantity = Math.round(this.parseNumber(row[quantidadeIndex]));
         const importedUnitPrice = valorIndex === -1 ? 0 : this.parseMoney(row[valorIndex]);
         const total = totalIndex === -1 ? 0 : this.parseMoney(row[totalIndex]);
         const unitPrice = importedUnitPrice || (quantity > 0 && total > 0 ? total / quantity : 0);

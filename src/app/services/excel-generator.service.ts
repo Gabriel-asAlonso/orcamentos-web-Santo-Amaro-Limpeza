@@ -165,7 +165,7 @@ export class ExcelGeneratorService {
       linha.getCell(4).value = item.product;
       linha.getCell(12).value = item.unit;
       linha.getCell(13).value = discount / 100;
-      linha.getCell(14).value = item.quantity;
+      linha.getCell(14).value = Math.round(item.quantity ?? 0);
       linha.getCell(15).value = item.unitPrice;
       linha.getCell(16).value = totalProduto;
 
