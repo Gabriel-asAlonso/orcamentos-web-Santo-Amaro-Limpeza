@@ -29,6 +29,7 @@ export class ExcelGeneratorPegLimpService {
 
     this.clearWorksheetRowGrouping(worksheet);
     worksheet.views = [{ showGridLines: false }];
+    worksheet.getColumn('B').width = (worksheet.getColumn('B').width ?? 8.43) + 2;
 
     const quoteDate = quote.date ? new Date(quote.date) : new Date();
 
