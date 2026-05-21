@@ -83,7 +83,8 @@ export class ExcelImporterService {
     const referenciaIndex = this.findColumn(headers, ['referencia', 'ref']);
     const produtoIndex = this.findColumn(headers, ['produto', 'descricao do produto', 'descricao']);
     const quantidadeIndex = this.findColumn(headers, ['quantidade', 'quant', 'qtd', 'qtde']);
-    const unidadeIndex = this.findColumn(headers, ['unidade', 'unid.', 'unid', 'unit']);
+    // 'unit' removido propositalmente porque faz match com 'VALOR UNIT' (preço unitário)
+    const unidadeIndex = this.findColumn(headers, ['unidade', 'unid.', 'unid']);
     const descontoIndex = this.findColumn(headers, ['desc %', 'desconto', 'desconto %']);
     const valorIndex = this.findColumn(headers, [
       'valor unit',
