@@ -173,8 +173,12 @@ export class ExcelGeneratorSplashService {
 
       // Formatação numérica
       linha.getCell(2).numFmt = '0';
-      linha.getCell(5).numFmt = 'R$ #,##0.00';
-      linha.getCell(6).numFmt = 'R$ #,##0.00';
+      // Formato accounting: cifrão à esquerda, número à direita (justificado)
+      linha.getCell(5).numFmt = '_-"R$" * #,##0.00_-;-"R$" * #,##0.00_-;_-"R$" * "-"??_-;_-@_-';
+      linha.getCell(6).numFmt = '_-"R$" * #,##0.00_-;-"R$" * #,##0.00_-;_-"R$" * "-"??_-;_-@_-';
+
+      // Alinhamento da unidade (C) - centralizado, sem quebra de linha
+      linha.getCell(3).alignment = { horizontal: 'center', vertical: 'middle', wrapText: false };
 
       linha.commit();
     });
@@ -193,7 +197,7 @@ export class ExcelGeneratorSplashService {
     const totalValor = worksheet.getCell(`F${linhaTotal}`);
     totalValor.value = total;
     this.applyStyle(totalValor, estiloTotalValor);
-    totalValor.numFmt = 'R$ #,##0.00';
+    totalValor.numFmt = '_-"R$" * #,##0.00_-;-"R$" * #,##0.00_-;_-"R$" * "-"??_-;_-@_-';
     totalValor.font = { ...(totalValor.font || {}), bold: true };
 
     // ===== Fortificar bordas EXTERNAS da tabela =====
