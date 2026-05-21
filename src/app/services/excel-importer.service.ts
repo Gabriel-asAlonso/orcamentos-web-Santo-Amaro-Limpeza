@@ -190,9 +190,9 @@ export class ExcelImporterService {
   }
 
   /**
-   * Extrai o valor da coluna unidade, descartando valores numéricos
-   * (que indicam que a coluna foi confundida com preço/quantidade).
-   * Sempre retorna texto válido como 'peça', 'kg' ou o fallback 'unid.'.
+   * Extrai o valor da coluna unidade.
+   * Se for um valor numérico quebrado (ex: 392.35), arredonda para inteiro.
+   * Se for texto (peça, kg, 5L), mantém como veio.
    */
   private extractUnit(row: SheetRow, unidadeIndex: number): string {
     if (unidadeIndex === -1) return 'unid.';
@@ -200,9 +200,13 @@ export class ExcelImporterService {
     const raw = String(row[unidadeIndex] ?? '').trim();
     if (!raw) return 'unid.';
 
-    // Se for um valor numérico (com vírgula ou ponto como decimal), descarta
-    const isPurelyNumeric = /^-?\d+([.,]\d+)?$/.test(raw.replace(/\s/g, ''));
-    if (isPurelyNumeric) return 'unid.';
+    // Se for um valor numérico (com vírgula ou ponto como decimal), arredonda
+    const cleaned = raw.replace(/\s/g, '');
+    const isPurelyNumeric = /^-?\d+([.,]\d+)?$/.test(cleaned);
+    if (isPurelyNumeric) {
+      const numericValue = Number(cleaned.replace(',', '.'));
+      return String(Math.round(numericValue));
+    }
 
     return raw;
   }
