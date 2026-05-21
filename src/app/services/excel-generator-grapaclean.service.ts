@@ -33,8 +33,16 @@ export class ExcelGeneratorGrapaCleanService {
     // ===== CABEÇALHO E DADOS DO CLIENTE =====
     // Vêm direto do template (linhas 1-10). NÃO MEXER.
 
-    // ===== ALTERAR APENAS Cond. Pagto e Prazo de Entrega =====
-    // J3 = Cond. Pagto | J4 = Prazo de Entrega
+    // ===== ALTERAR APENAS Data de Emissão, Cond. Pagto e Prazo de Entrega =====
+    // J2 = Data de Emissão | J3 = Cond. Pagto | J4 = Prazo de Entrega
+    const quoteDate = quote.date ? new Date(quote.date) : new Date();
+    const dia = String(quoteDate.getDate()).padStart(2, '0');
+    const mes = String(quoteDate.getMonth() + 1).padStart(2, '0');
+    const ano = quoteDate.getFullYear();
+    const dataCell = worksheet.getCell('J2');
+    dataCell.numFmt = '@';
+    dataCell.value = `${dia}/${mes}/${ano}`;
+
     worksheet.getCell('J3').value = quote.paymentMethod ?? '';
     worksheet.getCell('J4').value = quote.deliveryTime ?? '';
 
