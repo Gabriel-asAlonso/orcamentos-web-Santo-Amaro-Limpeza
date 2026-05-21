@@ -127,7 +127,7 @@ export class ExcelImporterService {
           reference: referenciaIndex === -1 ? '' : String(row[referenciaIndex] ?? '').trim(),
           product: mapProductName(String(row[produtoIndex] ?? '').trim()),
           quantity,
-          unit: unidadeIndex === -1 ? 'unid.' : String(row[unidadeIndex] ?? 'unid.').trim() || 'unid.',
+          unit: this.extractUnit(row, unidadeIndex),
           unitPrice,
           discount: descontoIndex === -1 ? 0 : this.parsePercent(row[descontoIndex])
         };
@@ -187,6 +187,24 @@ export class ExcelImporterService {
     );
 
     return hasProduct && (hasQuantity || hasValue);
+  }
+
+  /**
+   * Extrai o valor da coluna unidade, descartando valores numéricos
+   * (que indicam que a coluna foi confundida com preço/quantidade).
+   * Sempre retorna texto válido como 'peça', 'kg' ou o fallback 'unid.'.
+   */
+  private extractUnit(row: SheetRow, unidadeIndex: number): string {
+    if (unidadeIndex === -1) return 'unid.';
+
+    const raw = String(row[unidadeIndex] ?? '').trim();
+    if (!raw) return 'unid.';
+
+    // Se for um valor numérico (com vírgula ou ponto como decimal), descarta
+    const isPurelyNumeric = /^-?\d+([.,]\d+)?$/.test(raw.replace(/\s/g, ''));
+    if (isPurelyNumeric) return 'unid.';
+
+    return raw;
   }
 
   private findColumn(headers: string[], names: string[]) {
