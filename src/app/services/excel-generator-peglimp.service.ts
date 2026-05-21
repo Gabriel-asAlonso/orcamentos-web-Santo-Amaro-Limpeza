@@ -30,42 +30,8 @@ export class ExcelGeneratorPegLimpService {
     this.clearWorksheetRowGrouping(worksheet);
     worksheet.views = [{ showGridLines: false }];
 
-    const customer = quote.customerData;
-    const quoteDate = quote.date ? new Date(quote.date) : new Date();
-
-    // ===== DATA DO ORÇAMENTO =====
-    // F6 = "DATA: " (rótulo) | G6 = data
-    const dia = String(quoteDate.getDate()).padStart(2, '0');
-    const mes = String(quoteDate.getMonth() + 1).padStart(2, '0');
-    const ano = quoteDate.getFullYear();
-    const dataCell = worksheet.getCell('G6');
-    dataCell.numFmt = '@';
-    dataCell.value = `${dia}/${mes}/${ano}`;
-
-    // ===== DADOS DO CLIENTE =====
-    // Só sobrescreve se o customer tem valor real (preserva template caso contrário)
-    if (customer) {
-      if (customer.client) {
-        // D6:E6 mergido - NOME
-        worksheet.getCell('D6').value = customer.client;
-      }
-      if (customer.document) {
-        // D7 - CNPJ
-        worksheet.getCell('D7').value = customer.document;
-      }
-      if (customer.address) {
-        // D8:G8 mergido - END.:
-        worksheet.getCell('D8').value = customer.address;
-      }
-      if (customer.contact) {
-        // D9 - At.: (A/C)
-        worksheet.getCell('D9').value = customer.contact;
-      }
-      if (customer.phone) {
-        // G9 - FONE: (F9 tem o rótulo)
-        worksheet.getCell('G9').value = customer.phone;
-      }
-    }
+    // ===== DADOS DO CABEÇALHO E CLIENTE =====
+    // Vêm direto do template (linhas 1-9). Não mexer.
 
     // ===== CONDIÇÕES COMERCIAIS (linha 70) =====
     // B70 - rótulo + valor "FORMA DE PAG.: <valor>"
@@ -118,10 +84,15 @@ export class ExcelGeneratorPegLimpService {
     const linhasParaRemover = Math.max(quantidadeLinhasModelo - quantidadeProdutos, 0);
     const linhasParaAdicionar = Math.max(quantidadeProdutos - quantidadeLinhasModelo, 0);
 
-    // Capturar estilos da primeira linha de produto (linha 14) - colunas B-G (2-7)
-    const estiloProduto = Array.from({ length: 6 }, (_, i) =>
-      this.snapshotStyle(worksheet.getRow(linhaInicial).getCell(i + 2))
-    );
+    // Capturar estilos de TODAS as linhas modelo (14-64) preservando padrão zebra
+    const estilosPorLinha: ReturnType<ExcelGeneratorPegLimpService['snapshotStyle']>[][] = [];
+    for (let i = 0; i < quantidadeLinhasModelo; i++) {
+      const row = worksheet.getRow(linhaInicial + i);
+      const colEstilos = Array.from({ length: 6 }, (_, c) =>
+        this.snapshotStyle(row.getCell(c + 2))
+      );
+      estilosPorLinha.push(colEstilos);
+    }
     const alturaProduto = worksheet.getRow(linhaInicial).height ?? 16;
 
     // Calcular total
@@ -159,11 +130,16 @@ export class ExcelGeneratorPegLimpService {
 
       linha.height = alturaProduto;
 
+      // Aplicar estilo da linha correspondente do template (preserva padrão zebra)
+      // Se houver mais produtos que linhas modelo, usar cíclico
+      const estiloIndex = index % estilosPorLinha.length;
+      const estiloLinha = estilosPorLinha[estiloIndex];
+
       // Aplicar estilo capturado - colunas B (2) a G (7)
       for (let col = 2; col <= 7; col++) {
         const cell = linha.getCell(col);
         cell.value = null;
-        this.applyStyle(cell, estiloProduto[col - 2]);
+        this.applyStyle(cell, estiloLinha[col - 2]);
       }
 
       // Preencher dados (B=Item, C=Referência, D=Qtde, E=Descrição, F=Vl Unit, G=Vl Total)
