@@ -133,15 +133,20 @@ export class ExcelGeneratorPegLimpService {
 
     // Ajustar quantidade de linhas (preserva total + rodapé que estão em 65-70)
     if (linhasParaAdicionar > 0) {
-      worksheet.spliceRows(
+      this.spliceRowsInChunks(
+        worksheet,
         linhaSubTotal,
         0,
-        ...Array.from({ length: linhasParaAdicionar }, () => [])
+        Array.from({ length: linhasParaAdicionar }, () => [])
       );
     }
 
     if (linhasParaRemover > 0) {
-      worksheet.spliceRows(linhaInicial + quantidadeProdutos, linhasParaRemover);
+      this.spliceRowsInChunks(
+        worksheet,
+        linhaInicial + quantidadeProdutos,
+        linhasParaRemover
+      );
     }
 
     // Preencher produtos
@@ -212,6 +217,41 @@ export class ExcelGeneratorPegLimpService {
     if (style.border) cell.border = { ...style.border };
     if (style.fill) cell.fill = { ...style.fill };
     if (style.numFmt) cell.numFmt = style.numFmt;
+  }
+
+  /**
+   * O spliceRows do ExcelJS falha silenciosamente quando o count é grande
+   * (descoberto via teste: remove apenas ~7 linhas quando se pede 47+).
+   * Workaround: dividir em chunks pequenos.
+   */
+  private spliceRowsInChunks(
+    worksheet: ExcelJS.Worksheet,
+    start: number,
+    count: number,
+    inserts: any[] = []
+  ) {
+    const CHUNK_SIZE = 10;
+
+    if (count === 0 && inserts.length > 0) {
+      // Inserir linhas em chunks
+      let remaining = inserts.length;
+      let offset = 0;
+      while (remaining > 0) {
+        const chunk = Math.min(remaining, CHUNK_SIZE);
+        worksheet.spliceRows(start + offset, 0, ...inserts.slice(offset, offset + chunk));
+        remaining -= chunk;
+        offset += chunk;
+      }
+      return;
+    }
+
+    // Remover linhas em chunks
+    let toRemove = count;
+    while (toRemove > 0) {
+      const chunk = Math.min(toRemove, CHUNK_SIZE);
+      worksheet.spliceRows(start, chunk);
+      toRemove -= chunk;
+    }
   }
 
   private clearWorksheetRowGrouping(worksheet: ExcelJS.Worksheet) {
