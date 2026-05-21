@@ -1,0 +1,228 @@
+import { Injectable } from '@angular/core';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
+import { Quote, QuoteItem } from '../model/orcamento.model';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class ExcelGeneratorPegLimpService {
+  private templatePath = 'assets/templates/cotacao-template-PegLimp.xlsx';
+
+  async generateQuoteExcel(quote: Quote) {
+    const workbook = new ExcelJS.Workbook();
+
+    const templateResponse = await fetch(this.templatePath);
+
+    if (!templateResponse.ok) {
+      throw new Error(`Modelo de Excel não encontrado: ${this.templatePath}`);
+    }
+
+    const templateBuffer = await templateResponse.arrayBuffer();
+    await workbook.xlsx.load(templateBuffer);
+
+    const worksheet = workbook.worksheets[0];
+
+    if (!worksheet) {
+      throw new Error('Aba da planilha não encontrada');
+    }
+
+    this.clearWorksheetRowGrouping(worksheet);
+    worksheet.views = [{ showGridLines: false }];
+
+    const customer = quote.customerData;
+    const quoteDate = quote.date ? new Date(quote.date) : new Date();
+
+    // ===== DATA DO ORÇAMENTO =====
+    // F6 = "DATA: " (rótulo) | G6 = data
+    const dia = String(quoteDate.getDate()).padStart(2, '0');
+    const mes = String(quoteDate.getMonth() + 1).padStart(2, '0');
+    const ano = quoteDate.getFullYear();
+    const dataCell = worksheet.getCell('G6');
+    dataCell.numFmt = '@';
+    dataCell.value = `${dia}/${mes}/${ano}`;
+
+    // ===== DADOS DO CLIENTE =====
+    // Só sobrescreve se o customer tem valor real (preserva template caso contrário)
+    if (customer) {
+      if (customer.client) {
+        // D6:E6 mergido - NOME
+        worksheet.getCell('D6').value = customer.client;
+      }
+      if (customer.document) {
+        // D7 - CNPJ
+        worksheet.getCell('D7').value = customer.document;
+      }
+      if (customer.address) {
+        // D8:G8 mergido - END.:
+        worksheet.getCell('D8').value = customer.address;
+      }
+      if (customer.contact) {
+        // D9 - At.: (A/C)
+        worksheet.getCell('D9').value = customer.contact;
+      }
+      if (customer.phone) {
+        // G9 - FONE: (F9 tem o rótulo)
+        worksheet.getCell('G9').value = customer.phone;
+      }
+    }
+
+    // ===== CONDIÇÕES COMERCIAIS (linha 70) =====
+    // B70 - rótulo + valor "FORMA DE PAG.: <valor>"
+    const formaPagCell = worksheet.getCell('B70');
+    const formaPagFont = formaPagCell.font || {};
+    formaPagCell.value = {
+      richText: [
+        { text: 'FORMA DE PAG.:  ', font: { ...formaPagFont, bold: true } },
+        { text: `${quote.paymentMethod ?? ''}`, font: { ...formaPagFont, bold: false } }
+      ]
+    };
+    formaPagCell.alignment = {
+      ...(formaPagCell.alignment || {}),
+      wrapText: true,
+      vertical: 'middle'
+    };
+
+    // F70 - rótulo + valor "PRAZO DE ENTREGA: <valor>"
+    const prazoCell = worksheet.getCell('F70');
+    const prazoFont = prazoCell.font || {};
+    prazoCell.value = {
+      richText: [
+        { text: 'PRAZO DE ENTREGA:  ', font: { ...prazoFont, bold: true } },
+        { text: `${quote.deliveryTime ?? ''}`, font: { ...prazoFont, bold: false } }
+      ]
+    };
+    prazoCell.alignment = {
+      ...(prazoCell.alignment || {}),
+      wrapText: true,
+      vertical: 'middle'
+    };
+
+    // ===== PRODUTOS =====
+    this.fillProducts(worksheet, quote.items);
+
+    const arquivo = await workbook.xlsx.writeBuffer();
+
+    saveAs(
+      new Blob([arquivo]),
+      `${quote.label.replace(/\s+/g, '_')}_${quote.company.name.replace(/\W+/g, '_')}.xlsx`
+    );
+  }
+
+  private fillProducts(worksheet: ExcelJS.Worksheet, items: QuoteItem[]) {
+    const linhaInicial = 14;
+    // Totais ficam em G65 (SUB-TOTAL), G66 (DESCONTO), G67 (FRETE), G68 (TOTAL)
+    const linhaSubTotal = 65;
+    const quantidadeProdutos = Math.max(items.length, 1);
+    const quantidadeLinhasModelo = Math.max(linhaSubTotal - linhaInicial, 1);
+    const linhasParaRemover = Math.max(quantidadeLinhasModelo - quantidadeProdutos, 0);
+    const linhasParaAdicionar = Math.max(quantidadeProdutos - quantidadeLinhasModelo, 0);
+
+    // Capturar estilos da primeira linha de produto (linha 14) - colunas B-G (2-7)
+    const estiloProduto = Array.from({ length: 6 }, (_, i) =>
+      this.snapshotStyle(worksheet.getRow(linhaInicial).getCell(i + 2))
+    );
+    const alturaProduto = worksheet.getRow(linhaInicial).height ?? 16;
+
+    // Calcular total
+    const total = items.reduce((sum, item) => {
+      const discount = item.discount ?? 0;
+      const subtotal = item.quantity * item.unitPrice;
+      return sum + (subtotal - subtotal * (discount / 100));
+    }, 0);
+
+    // Ajustar quantidade de linhas (preserva total + rodapé que estão em 65-70)
+    if (linhasParaAdicionar > 0) {
+      worksheet.spliceRows(
+        linhaSubTotal,
+        0,
+        ...Array.from({ length: linhasParaAdicionar }, () => [])
+      );
+    }
+
+    if (linhasParaRemover > 0) {
+      worksheet.spliceRows(linhaInicial + quantidadeProdutos, linhasParaRemover);
+    }
+
+    // Preencher produtos
+    items.forEach((item, index) => {
+      const rowNumber = linhaInicial + index;
+      const linha = worksheet.getRow(rowNumber);
+      const discount = item.discount ?? 0;
+      const subtotal = item.quantity * item.unitPrice;
+      const totalProduto = subtotal - subtotal * (discount / 100);
+
+      linha.height = alturaProduto;
+
+      // Aplicar estilo capturado - colunas B (2) a G (7)
+      for (let col = 2; col <= 7; col++) {
+        const cell = linha.getCell(col);
+        cell.value = null;
+        this.applyStyle(cell, estiloProduto[col - 2]);
+      }
+
+      // Preencher dados (B=Item, C=Referência, D=Qtde, E=Descrição, F=Vl Unit, G=Vl Total)
+      linha.getCell(2).value = index + 1;                    // B - ITEM
+      linha.getCell(3).value = item.reference ?? item.code ?? ''; // C - REFERÊNCIA
+      linha.getCell(4).value = item.quantity;                // D - QTDE
+      linha.getCell(5).value = item.product ?? '';           // E - DESCRIÇÃO
+      linha.getCell(6).value = item.unitPrice;               // F - VALOR UNIT
+      linha.getCell(7).value = totalProduto;                 // G - VALOR TOTAL
+
+      // Formatação numérica
+      linha.getCell(4).numFmt = '0';
+      linha.getCell(6).numFmt = 'R$ #,##0.00';
+      linha.getCell(7).numFmt = 'R$ #,##0.00';
+
+      linha.commit();
+    });
+
+    // Atualizar o SUB-TOTAL e TOTAL nas linhas após o ajuste
+    // Após o splice, as linhas se deslocam: linhaSubTotal agora está em
+    // (linhaInicial + quantidadeProdutos) se houve adição, ou no original se removeu
+    const novaLinhaSubTotal = linhaInicial + quantidadeProdutos;
+
+    // Atualizar SUB-TOTAL
+    const subTotalCell = worksheet.getCell(`G${novaLinhaSubTotal}`);
+    subTotalCell.value = total;
+    subTotalCell.numFmt = 'R$ #,##0.00';
+
+    // Atualizar TOTAL (linha SUB-TOTAL + 3)
+    const totalCell = worksheet.getCell(`G${novaLinhaSubTotal + 3}`);
+    totalCell.value = total;
+    totalCell.numFmt = 'R$ #,##0.00';
+  }
+
+  private snapshotStyle(cell: ExcelJS.Cell) {
+    return {
+      font: cell.font ? { ...cell.font } : undefined,
+      alignment: cell.alignment ? { ...cell.alignment } : undefined,
+      border: cell.border ? { ...cell.border } : undefined,
+      fill: cell.fill ? { ...cell.fill } : undefined,
+      numFmt: cell.numFmt
+    };
+  }
+
+  private applyStyle(
+    cell: ExcelJS.Cell,
+    style: ReturnType<ExcelGeneratorPegLimpService['snapshotStyle']>
+  ) {
+    if (style.font) cell.font = { ...style.font };
+    if (style.alignment) cell.alignment = { ...style.alignment };
+    if (style.border) cell.border = { ...style.border };
+    if (style.fill) cell.fill = { ...style.fill };
+    if (style.numFmt) cell.numFmt = style.numFmt;
+  }
+
+  private clearWorksheetRowGrouping(worksheet: ExcelJS.Worksheet) {
+    (worksheet as any).rowOutlineLevel = 0;
+
+    const actualRowCount = (worksheet as any).actualRowCount ?? worksheet.rowCount;
+    const ultimaLinha = Math.min(Math.max(actualRowCount, 75), 200);
+    for (let rowNumber = 12; rowNumber <= ultimaLinha; rowNumber++) {
+      const row = worksheet.getRow(rowNumber);
+      (row as any).outlineLevel = 0;
+      row.hidden = false;
+    }
+  }
+}
