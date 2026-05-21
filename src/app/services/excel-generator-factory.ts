@@ -5,6 +5,7 @@ import { ExcelGeneratorSplashService } from './excel-generator-splash.service';
 import { ExcelGeneratorLagunaService } from './excel-generator-laguna.service';
 import { ExcelGeneratorSantoAmaroService } from './excel-generator-santo-amaro.service';
 import { ExcelGeneratorPegLimpService } from './excel-generator-peglimp.service';
+import { ExcelGeneratorGrapaCleanService } from './excel-generator-grapaclean.service';
 
 @Injectable({
   providedIn: 'root'
@@ -15,6 +16,7 @@ export class ExcelGeneratorFactory {
   private lagunaGenerator = inject(ExcelGeneratorLagunaService);
   private santoAmaroGenerator = inject(ExcelGeneratorSantoAmaroService);
   private pegLimpGenerator = inject(ExcelGeneratorPegLimpService);
+  private grapaCleanGenerator = inject(ExcelGeneratorGrapaCleanService);
 
   getGenerator(companyId: string) {
     switch (companyId.toLowerCase()) {
@@ -26,6 +28,8 @@ export class ExcelGeneratorFactory {
         return this.santoAmaroGenerator;
       case 'peg-limp':
         return this.pegLimpGenerator;
+      case 'grapa-clean':
+        return this.grapaCleanGenerator;
       default:
         return this.defaultGenerator;
     }
