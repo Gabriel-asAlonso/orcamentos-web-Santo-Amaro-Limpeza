@@ -196,14 +196,29 @@ export class ExcelGeneratorSplashService {
     totalValor.numFmt = 'R$ #,##0.00';
     totalValor.font = { ...(totalValor.font || {}), bold: true };
 
-    // Adicionar borda inferior (preta, fina) em toda a linha do total (A-F)
-    const bordaInferior: Partial<ExcelJS.Borders> = {
-      bottom: { style: 'thin', color: { argb: 'FF000000' } }
-    };
+    // ===== Fortificar bordas EXTERNAS da tabela =====
+    // O template tem bordas externas medium e internas thin.
+    // Como o estilo da linha 15 tem F15 com right=thin (linha interna),
+    // todas as linhas copiadas ficam com right=thin. Precisamos fortificar:
+    // - Borda direita (col F) de todas as linhas de produto e do total = medium
+    // - Borda inferior do total = medium
+    const bordaMedium = { style: 'medium' as const, color: { argb: 'FF000000' } };
+
+    // Borda direita em toda a coluna F dos produtos (linhas 15 até linhaTotal-1)
+    for (let row = linhaInicial; row <= linhaTotal - 1; row++) {
+      const cell = worksheet.getRow(row).getCell(6);
+      cell.border = { ...(cell.border || {}), right: bordaMedium };
+    }
+
+    // Borda inferior medium em toda a linha do total (A-F)
     for (let col = 1; col <= 6; col++) {
       const cell = worksheet.getRow(linhaTotal).getCell(col);
-      cell.border = { ...(cell.border || {}), ...bordaInferior };
+      cell.border = { ...(cell.border || {}), bottom: bordaMedium };
     }
+
+    // Borda direita medium na célula F do total
+    const totalRightCell = worksheet.getRow(linhaTotal).getCell(6);
+    totalRightCell.border = { ...(totalRightCell.border || {}), right: bordaMedium };
 
     worksheet.getRow(linhaTotal).height = 20;
 
