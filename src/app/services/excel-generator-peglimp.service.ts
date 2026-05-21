@@ -30,8 +30,19 @@ export class ExcelGeneratorPegLimpService {
     this.clearWorksheetRowGrouping(worksheet);
     worksheet.views = [{ showGridLines: false }];
 
-    // ===== DADOS DO CABEÇALHO E CLIENTE =====
-    // Vêm direto do template (linhas 1-9). Não mexer.
+    const quoteDate = quote.date ? new Date(quote.date) : new Date();
+
+    // ===== DATA DO ORÇAMENTO =====
+    // F6 = "DATA: " (rótulo) | G6 = data
+    const dia = String(quoteDate.getDate()).padStart(2, '0');
+    const mes = String(quoteDate.getMonth() + 1).padStart(2, '0');
+    const ano = quoteDate.getFullYear();
+    const dataCell = worksheet.getCell('G6');
+    dataCell.numFmt = '@';
+    dataCell.value = `${dia}/${mes}/${ano}`;
+
+    // ===== DADOS DO CLIENTE (NOME, CNPJ, END., At., FONE) =====
+    // Vêm direto do template (linhas 6-9). Não mexer.
 
     // ===== CONDIÇÕES COMERCIAIS (linha 70) =====
     // B70 - rótulo + valor "FORMA DE PAG.: <valor>"
@@ -84,15 +95,14 @@ export class ExcelGeneratorPegLimpService {
     const linhasParaRemover = Math.max(quantidadeLinhasModelo - quantidadeProdutos, 0);
     const linhasParaAdicionar = Math.max(quantidadeProdutos - quantidadeLinhasModelo, 0);
 
-    // Capturar estilos de TODAS as linhas modelo (14-64) preservando padrão zebra
-    const estilosPorLinha: ReturnType<ExcelGeneratorPegLimpService['snapshotStyle']>[][] = [];
-    for (let i = 0; i < quantidadeLinhasModelo; i++) {
-      const row = worksheet.getRow(linhaInicial + i);
-      const colEstilos = Array.from({ length: 6 }, (_, c) =>
-        this.snapshotStyle(row.getCell(c + 2))
-      );
-      estilosPorLinha.push(colEstilos);
-    }
+    // Capturar dois estilos: linha branca (14) e linha cinza (19)
+    // para criar alternância zebra
+    const estiloBranco = Array.from({ length: 6 }, (_, c) =>
+      this.snapshotStyle(worksheet.getRow(14).getCell(c + 2))
+    );
+    const estiloCinza = Array.from({ length: 6 }, (_, c) =>
+      this.snapshotStyle(worksheet.getRow(19).getCell(c + 2))
+    );
     const alturaProduto = worksheet.getRow(linhaInicial).height ?? 16;
 
     // Calcular total
@@ -130,10 +140,8 @@ export class ExcelGeneratorPegLimpService {
 
       linha.height = alturaProduto;
 
-      // Aplicar estilo da linha correspondente do template (preserva padrão zebra)
-      // Se houver mais produtos que linhas modelo, usar cíclico
-      const estiloIndex = index % estilosPorLinha.length;
-      const estiloLinha = estilosPorLinha[estiloIndex];
+      // Alternância zebra: linhas pares (0, 2, 4...) brancas, ímpares (1, 3, 5...) cinzas
+      const estiloLinha = index % 2 === 0 ? estiloBranco : estiloCinza;
 
       // Aplicar estilo capturado - colunas B (2) a G (7)
       for (let col = 2; col <= 7; col++) {
