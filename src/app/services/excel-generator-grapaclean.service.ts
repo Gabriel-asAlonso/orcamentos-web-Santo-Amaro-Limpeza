@@ -118,7 +118,7 @@ export class ExcelGeneratorGrapaCleanService {
       // B = Código | C = Descrição | F = Qtde | H = Valor Unit | I = Desconto | J = Valor Total
       linha.getCell(2).value = item.code ?? index + 1;        // B - Código
       linha.getCell(3).value = item.product ?? '';            // C - Descrição
-      linha.getCell(6).value = item.quantity;                 // F - Qtde
+      linha.getCell(6).value = Math.round(item.quantity ?? 0); // F - Qtde (sempre inteiro)
       linha.getCell(8).value = item.unitPrice;                // H - Valor Unit
       linha.getCell(9).value = discount > 0 ? discount / 100 : null; // I - Desconto
       linha.getCell(10).value = totalProduto;                 // J - Valor Total

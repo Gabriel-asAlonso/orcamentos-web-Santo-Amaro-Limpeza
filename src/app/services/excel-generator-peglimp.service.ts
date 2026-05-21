@@ -152,8 +152,8 @@ export class ExcelGeneratorPegLimpService {
       }
 
       // Preencher dados (B=Item, C=Qtde, D=Descrição, E=Vl Unit, F=Vl Total)
-      linha.getCell(2).value = index + 1;             // B - ITEM
-      linha.getCell(3).value = item.quantity;         // C - QTDE
+      linha.getCell(2).value = index + 1;                       // B - ITEM
+      linha.getCell(3).value = Math.round(item.quantity ?? 0);  // C - QTDE (sempre inteiro)
       linha.getCell(4).value = item.product ?? '';    // D - DESCRIÇÃO
       linha.getCell(5).value = item.unitPrice;        // E - VALOR UNIT
       linha.getCell(6).value = totalProduto;          // F - VALOR TOTAL

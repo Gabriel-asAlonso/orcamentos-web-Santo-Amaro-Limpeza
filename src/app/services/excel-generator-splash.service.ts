@@ -164,8 +164,8 @@ export class ExcelGeneratorSplashService {
       }
 
       // Preencher dados
-      linha.getCell(1).value = index + 1;            // A - Item
-      linha.getCell(2).value = item.quantity;        // B - Quantidade
+      linha.getCell(1).value = index + 1;                       // A - Item
+      linha.getCell(2).value = Math.round(item.quantity ?? 0);  // B - Quantidade (sempre inteiro)
       linha.getCell(3).value = item.unit ?? '';      // C - Unidade
       linha.getCell(4).value = item.product ?? '';   // D - Descrição
       linha.getCell(5).value = item.unitPrice;       // E - Valor unitário
