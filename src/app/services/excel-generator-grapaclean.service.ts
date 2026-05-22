@@ -59,12 +59,16 @@ export class ExcelGeneratorGrapaCleanService {
 
   private fillProducts(worksheet: ExcelJS.Worksheet, items: QuoteItem[]) {
     const linhaInicial = 15;
-    // Produtos modelo no template: 15-33 (19 linhas)
-    // Linha 34 vazia (separador)
-    // Linha 35: FRETE / DESCONTO / TOTAL
-    const ultimaLinhaProdutoModelo = 33;
+    // Encontra dinamicamente a linha do TOTAL no template (procura "FRETE:" ou "TOTAL:")
+    // Estrutura esperada: produtos | linha vazia separadora | linha de totais (FRETE/DESCONTO/TOTAL)
+    const linhaTotaisOriginal =
+      this.findRowContaining(worksheet, 'frete:', linhaInicial, 200) ??
+      this.findRowContaining(worksheet, 'total:', linhaInicial, 200) ??
+      35;
+    // Última linha de produto = linha do total - 2 (uma linha vazia separadora + linha de totais)
+    const ultimaLinhaProdutoModelo = linhaTotaisOriginal - 2;
     const quantidadeProdutos = Math.max(items.length, 1);
-    const quantidadeLinhasModelo = ultimaLinhaProdutoModelo - linhaInicial + 1; // 19
+    const quantidadeLinhasModelo = ultimaLinhaProdutoModelo - linhaInicial + 1;
     const linhasParaRemover = Math.max(quantidadeLinhasModelo - quantidadeProdutos, 0);
     const linhasParaAdicionar = Math.max(quantidadeProdutos - quantidadeLinhasModelo, 0);
 
@@ -171,6 +175,31 @@ export class ExcelGeneratorGrapaCleanService {
       worksheet.spliceRows(start, chunk);
       toRemove -= chunk;
     }
+  }
+
+  /**
+   * Encontra a primeira linha entre fromRow e toRow que contém o texto
+   * marker (case-insensitive). Retorna undefined se não encontrar.
+   */
+  private findRowContaining(
+    worksheet: ExcelJS.Worksheet,
+    marker: string,
+    fromRow: number,
+    toRow: number
+  ): number | undefined {
+    const target = marker.toLowerCase();
+    for (let r = fromRow; r <= toRow; r++) {
+      for (let c = 1; c <= 16; c++) {
+        const v = worksheet.getRow(r).getCell(c).value;
+        let str = '';
+        if (typeof v === 'string') str = v;
+        else if (v && typeof v === 'object' && (v as any).richText) {
+          str = (v as any).richText.map((x: any) => x.text).join('');
+        }
+        if (str.toLowerCase().includes(target)) return r;
+      }
+    }
+    return undefined;
   }
 
   private snapshotStyle(cell: ExcelJS.Cell) {

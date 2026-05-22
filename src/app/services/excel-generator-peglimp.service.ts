@@ -89,8 +89,12 @@ export class ExcelGeneratorPegLimpService {
 
   private fillProducts(worksheet: ExcelJS.Worksheet, items: QuoteItem[]) {
     const linhaInicial = 14;
-    // Totais ficam em F65 (SUB-TOTAL), F66 (DESCONTO), F67 (FRETE), F68 (TOTAL)
-    const linhaSubTotal = 65;
+    // Encontra dinamicamente onde está o SUB-TOTAL (primeira linha da seção de totais)
+    // Estrutura: produtos | SUB-TOTAL | DESCONTO | FRETE | TOTAL
+    const linhaSubTotal =
+      this.findRowContaining(worksheet, 'sub-total', linhaInicial, 200) ??
+      this.findRowContaining(worksheet, 'subtotal', linhaInicial, 200) ??
+      65;
     const quantidadeProdutos = Math.max(items.length, 1);
     const quantidadeLinhasModelo = Math.max(linhaSubTotal - linhaInicial, 1);
     const linhasParaRemover = Math.max(quantidadeLinhasModelo - quantidadeProdutos, 0);
@@ -180,6 +184,31 @@ export class ExcelGeneratorPegLimpService {
     const totalCell = worksheet.getCell(`F${novaLinhaSubTotal + 3}`);
     totalCell.value = total;
     totalCell.numFmt = accountingFmt;
+  }
+
+  /**
+   * Encontra a primeira linha entre fromRow e toRow que contém o texto
+   * marker (case-insensitive). Retorna undefined se não encontrar.
+   */
+  private findRowContaining(
+    worksheet: ExcelJS.Worksheet,
+    marker: string,
+    fromRow: number,
+    toRow: number
+  ): number | undefined {
+    const target = marker.toLowerCase();
+    for (let r = fromRow; r <= toRow; r++) {
+      for (let c = 1; c <= 16; c++) {
+        const v = worksheet.getRow(r).getCell(c).value;
+        let str = '';
+        if (typeof v === 'string') str = v;
+        else if (v && typeof v === 'object' && (v as any).richText) {
+          str = (v as any).richText.map((x: any) => x.text).join('');
+        }
+        if (str.toLowerCase().includes(target)) return r;
+      }
+    }
+    return undefined;
   }
 
   private snapshotStyle(cell: ExcelJS.Cell) {

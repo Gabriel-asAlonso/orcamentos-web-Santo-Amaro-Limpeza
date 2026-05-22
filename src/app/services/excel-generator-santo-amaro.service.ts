@@ -110,8 +110,9 @@ export class ExcelGeneratorSantoAmaroService {
 
   private fillProducts(worksheet: ExcelJS.Worksheet, items: QuoteItem[]) {
     const linhaInicial = 24;
-    // Linha do total: A31:O31 = "Total Produtos:", P31 = valor
-    const linhaTotalOriginal = 31;
+    // Encontra dinamicamente a linha do "Total Produtos:" no template
+    const linhaTotalOriginal =
+      this.findRowContaining(worksheet, 'total produtos', linhaInicial, 200) ?? 31;
     const quantidadeProdutos = Math.max(items.length, 1);
     const quantidadeLinhasModelo = Math.max(linhaTotalOriginal - linhaInicial, 1);
     const linhasParaRemover = Math.max(quantidadeLinhasModelo - quantidadeProdutos, 0);
@@ -243,6 +244,31 @@ export class ExcelGeneratorSantoAmaroService {
       worksheet.spliceRows(start, chunk);
       toRemove -= chunk;
     }
+  }
+
+  /**
+   * Encontra a primeira linha entre fromRow e toRow que contém o texto
+   * marker (case-insensitive). Retorna undefined se não encontrar.
+   */
+  private findRowContaining(
+    worksheet: ExcelJS.Worksheet,
+    marker: string,
+    fromRow: number,
+    toRow: number
+  ): number | undefined {
+    const target = marker.toLowerCase();
+    for (let r = fromRow; r <= toRow; r++) {
+      for (let c = 1; c <= 16; c++) {
+        const v = worksheet.getRow(r).getCell(c).value;
+        let str = '';
+        if (typeof v === 'string') str = v;
+        else if (v && typeof v === 'object' && (v as any).richText) {
+          str = (v as any).richText.map((x: any) => x.text).join('');
+        }
+        if (str.toLowerCase().includes(target)) return r;
+      }
+    }
+    return undefined;
   }
 
   private snapshotStyle(cell: ExcelJS.Cell) {
