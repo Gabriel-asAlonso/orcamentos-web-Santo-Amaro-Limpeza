@@ -30,8 +30,43 @@ export class ExcelGeneratorGrapaCleanService {
     this.clearWorksheetRowGrouping(worksheet);
     worksheet.views = [{ showGridLines: false }];
 
-    // ===== CABEÇALHO E DADOS DO CLIENTE =====
-    // Vêm direto do template (linhas 1-10). NÃO MEXER.
+    const customer = quote.customerData;
+
+    // DEBUG: imprime os campos que o GrapaClean usa
+    console.log('[GrapaClean] Customer recebido:', {
+      client: customer?.client,
+      document: customer?.document,
+      address: customer?.address,
+      contact: customer?.contact,
+      email: customer?.email,
+      phone: customer?.phone
+    });
+
+    // ===== CABEÇALHO DA EMPRESA =====
+    // Vem direto do template (linhas 1-6). NÃO MEXER.
+
+    // ===== DADOS DO CLIENTE =====
+    // NOME (C7), CNPJ (C8:F8), END. (C9), CONTATO (C10), EMAIL (G9), TELEFONE (G10)
+    if (customer) {
+      if (customer.client) {
+        worksheet.getCell('C7').value = String(customer.client).replace(/[\r\n]+/g, ' ').trim();
+      }
+      if (customer.document) {
+        worksheet.getCell('C8').value = String(customer.document).replace(/[\r\n]+/g, ' ').trim();
+      }
+      if (customer.address) {
+        worksheet.getCell('C9').value = String(customer.address).replace(/[\r\n]+/g, ' ').trim();
+      }
+      if (customer.contact) {
+        worksheet.getCell('C10').value = String(customer.contact).replace(/[\r\n]+/g, ' ').trim();
+      }
+      if (customer.email) {
+        worksheet.getCell('G9').value = customer.email;
+      }
+      if (customer.phone) {
+        worksheet.getCell('G10').value = customer.phone;
+      }
+    }
 
     // ===== ALTERAR APENAS Data de Emissão, Cond. Pagto e Prazo de Entrega =====
     // J2 = Data de Emissão | J3 = Cond. Pagto | J4 = Prazo de Entrega
