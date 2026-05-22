@@ -8,7 +8,7 @@ import { Quote, QuoteItem } from '../model/orcamento.model';
 })
 export class ExcelGeneratorService {
   private templatePath = 'assets/templates/cotacao-template.xlsx';
-  private fallbackLogoPath = '/logoSantoAmaroLimpeza.jpg';
+  private fallbackLogoPath = '/logoSantoAmaroLimpeza.png';
 
   async generateQuoteExcel(quote: Quote) {
     const workbook = new ExcelJS.Workbook();
@@ -616,10 +616,16 @@ export class ExcelGeneratorService {
       extension: this.getImageExtension(resolvedLogoPath)
     });
 
-worksheet.addImage(logoId, {
-  tl: { col: 0.99, row: 2.20 } as any,
-  ext: { width: 86, height: 86 }
-});
+    // Usar twoCellAnchor (tl + br) em vez de oneCellAnchor (tl + ext).
+    // O oneCellAnchor com 'ext' fixo em pixels é interpretado de forma
+    // inconsistente entre Excel desktop e Google Sheets ao exportar PDF
+    // (Excel reinterpreta width/height como pontos × DPI, distorcendo a
+    // imagem). Com twoCellAnchor a imagem fica ancorada à grade e mantém
+    // proporção igual em todos os apps.
+    worksheet.addImage(logoId, {
+      tl: { col: 0.99, row: 2.20 } as any,
+      br: { col: 1.99, row: 5.20 } as any
+    });
   }
 
   private blobToBase64(blob: Blob): Promise<string> {
