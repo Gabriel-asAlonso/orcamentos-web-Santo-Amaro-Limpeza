@@ -34,8 +34,7 @@ export class ExcelGeneratorService {
     this.clearWorksheetRowGrouping(worksheet);
 
     await this.insertHeaderBorder(workbook, worksheet);
-    // Logo agora é inserida diretamente no template (cotacao-template.xlsx)
-    // dentro da célula mesclada A2:B6, evitando deslocamento ao exportar PDF
+    await this.insertCompanyLogo(workbook, worksheet, quote.company.logoPath);
 
     const companyDocument = quote.company.cnpj || quote.company.taxId || '';
     const companyAddress = quote.company.address || '';
