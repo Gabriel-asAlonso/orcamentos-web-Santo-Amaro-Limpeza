@@ -174,9 +174,9 @@ export class ExcelGeneratorService {
       const accountingFmt = '_-"R$" * #,##0.00_-;-"R$" * #,##0.00_-;_-"R$" * "-"??_-;_-@_-';
 
       linha.getCell(1).value = item.code ?? index + 1;
-      // Coluna 2 (Referência) removida — fica vazia
-      linha.getCell(2).value = '';
-      linha.getCell(4).value = item.product;
+      // Descrição agora ocupa B:K mergido (era D:K com B:C de referência)
+      linha.getCell(2).value = item.product;
+      linha.getCell(4).value = null;
       // Unidade: garantir que é texto (não número) e sem quebra
       linha.getCell(12).value = String(item.unit ?? 'unid.');
       linha.getCell(13).value = discount / 100;
@@ -201,8 +201,8 @@ export class ExcelGeneratorService {
 
       // Alinhamento consistente em todas as linhas (justificação uniforme)
       linha.getCell(1).alignment = { horizontal: 'center', vertical: 'middle', wrapText: false };
-      linha.getCell(2).alignment = { horizontal: 'center', vertical: 'middle', wrapText: false };
-      linha.getCell(4).alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
+      // Descrição B:K mergida
+      linha.getCell(2).alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
       linha.getCell(12).alignment = { horizontal: 'center', vertical: 'middle', wrapText: false };
       linha.getCell(13).alignment = { horizontal: 'center', vertical: 'middle', wrapText: false };
       linha.getCell(14).alignment = { horizontal: 'center', vertical: 'middle', wrapText: false };
@@ -377,8 +377,11 @@ export class ExcelGeneratorService {
   }
 
   private applyProductRowLayout(worksheet: ExcelJS.Worksheet, rowNumber: number) {
-    this.safeMergeCells(worksheet, `B${rowNumber}:C${rowNumber}`);
-    this.safeMergeCells(worksheet, `D${rowNumber}:K${rowNumber}`);
+    // Coluna Referência foi removida do template — descrição agora ocupa B:K inteiro
+    // (era: B:C = Referência, D:K = Descrição)
+    this.safeUnmergeCells(worksheet, `B${rowNumber}:C${rowNumber}`);
+    this.safeUnmergeCells(worksheet, `D${rowNumber}:K${rowNumber}`);
+    this.safeMergeCells(worksheet, `B${rowNumber}:K${rowNumber}`);
 
     const row = worksheet.getRow(rowNumber);
 
@@ -387,11 +390,10 @@ export class ExcelGeneratorService {
     }
 
     this.setOuterBorder(row.getCell(1), true, true, true, true);
+    // Descrição B:K mergida - apenas a célula B precisa de bordas top/bottom/left
     this.setOuterBorder(row.getCell(2), true, true, true, false);
-    this.setOuterBorder(row.getCell(3), true, false, true, true);
-    this.setOuterBorder(row.getCell(4), true, true, true, false);
 
-    for (let colNumber = 5; colNumber <= 10; colNumber++) {
+    for (let colNumber = 3; colNumber <= 10; colNumber++) {
       this.setOuterBorder(row.getCell(colNumber), true, false, true, false);
     }
 
