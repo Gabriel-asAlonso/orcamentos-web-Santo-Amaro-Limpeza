@@ -125,7 +125,8 @@ export class ExcelGeneratorSplashService {
 
   private fillProducts(worksheet: ExcelJS.Worksheet, items: QuoteItem[]) {
     const linhaInicial = 15;
-    const linhaTotalOriginal = 55; // Total está em A55:E56 (rótulo) e F55:F56 (valor)
+    // Encontra dinamicamente onde está o TOTAL no template (procura "Total Geral")
+    const linhaTotalOriginal = this.findRowContaining(worksheet, 'total geral', linhaInicial, 100) ?? 55;
     const quantidadeProdutos = Math.max(items.length, 1);
     const quantidadeLinhasModelo = Math.max(linhaTotalOriginal - linhaInicial, 1);
     const linhasParaRemover = Math.max(quantidadeLinhasModelo - quantidadeProdutos, 0);
@@ -248,6 +249,31 @@ export class ExcelGeneratorSplashService {
 
     // Limpar agrupamento de todas as linhas após o splice
     this.clearWorksheetRowGrouping(worksheet);
+  }
+
+  /**
+   * Encontra a primeira linha entre fromRow e toRow que contém o texto
+   * marker (case-insensitive). Retorna undefined se não encontrar.
+   */
+  private findRowContaining(
+    worksheet: ExcelJS.Worksheet,
+    marker: string,
+    fromRow: number,
+    toRow: number
+  ): number | undefined {
+    const target = marker.toLowerCase();
+    for (let r = fromRow; r <= toRow; r++) {
+      for (let c = 1; c <= 16; c++) {
+        const v = worksheet.getRow(r).getCell(c).value;
+        let str = '';
+        if (typeof v === 'string') str = v;
+        else if (v && typeof v === 'object' && (v as any).richText) {
+          str = (v as any).richText.map((x: any) => x.text).join('');
+        }
+        if (str.toLowerCase().includes(target)) return r;
+      }
+    }
+    return undefined;
   }
 
   private snapshotStyle(cell: ExcelJS.Cell) {
