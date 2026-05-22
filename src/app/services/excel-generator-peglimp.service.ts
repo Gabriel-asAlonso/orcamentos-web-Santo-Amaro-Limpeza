@@ -32,6 +32,15 @@ export class ExcelGeneratorPegLimpService {
     worksheet.getColumn('B').width = (worksheet.getColumn('B').width ?? 8.43) + 2;
 
     const quoteDate = quote.date ? new Date(quote.date) : new Date();
+    const customer = quote.customerData;
+
+    // DEBUG: imprime os campos que o Peg Limp usa
+    console.log('[Peg Limp] Customer recebido:', {
+      client: customer?.client,
+      document: customer?.document,
+      address: customer?.address,
+      contact: customer?.contact
+    });
 
     // ===== DATA DO ORÇAMENTO =====
     // E6 = "DATA: " (rótulo) | F6 = data
@@ -42,8 +51,22 @@ export class ExcelGeneratorPegLimpService {
     dataCell.numFmt = '@';
     dataCell.value = `${dia}/${mes}/${ano}`;
 
-    // ===== DADOS DO CLIENTE (NOME, CNPJ, END., At., FONE) =====
-    // Vêm direto do template (linhas 6-9). Não mexer.
+    // ===== DADOS DO CLIENTE =====
+    // Apenas: NOME (C6), CNPJ (C7), END. (C8), At./Contato (C9)
+    if (customer) {
+      if (customer.client) {
+        worksheet.getCell('C6').value = String(customer.client).replace(/[\r\n]+/g, ' ').trim();
+      }
+      if (customer.document) {
+        worksheet.getCell('C7').value = String(customer.document).replace(/[\r\n]+/g, ' ').trim();
+      }
+      if (customer.address) {
+        worksheet.getCell('C8').value = String(customer.address).replace(/[\r\n]+/g, ' ').trim();
+      }
+      if (customer.contact) {
+        worksheet.getCell('C9').value = String(customer.contact).replace(/[\r\n]+/g, ' ').trim();
+      }
+    }
 
     // ===== CONDIÇÕES COMERCIAIS (linha 70) =====
     // B70 - rótulo + valor "FORMA DE PAG.: <valor>"
