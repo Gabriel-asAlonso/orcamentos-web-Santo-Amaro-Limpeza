@@ -40,6 +40,16 @@ export class ExcelGeneratorService {
     const companyAddress = quote.company.address || '';
     const customer = quote.customerData;
 
+    // DEBUG: imprime o customer recebido
+    console.log('[Laguna/Default] Customer recebido:', customer);
+    console.log('[Laguna/Default] Quote info:', {
+      label: quote.label,
+      company: quote.company.id,
+      source: (quote as any).source,
+      paymentMethod: quote.paymentMethod,
+      deliveryTime: quote.deliveryTime
+    });
+
     this.applyCustomerDataLayout(worksheet);
 
     worksheet.getCell('A2').value = '';
