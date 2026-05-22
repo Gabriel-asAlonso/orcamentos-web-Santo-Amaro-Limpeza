@@ -33,6 +33,18 @@ export class ExcelGeneratorSplashService {
     const customer = quote.customerData;
     const quoteDate = quote.date ? new Date(quote.date) : new Date();
 
+    // DEBUG: imprime apenas os 3 campos que o Splash usa
+    console.log('[Splash] Customer recebido:', {
+      client: customer?.client,
+      document: customer?.document,
+      address: customer?.address
+    });
+    console.log('[Splash] Quote info:', {
+      label: quote.label,
+      company: quote.company.id,
+      source: (quote as any).source
+    });
+
     // ===== DATA DO ORÇAMENTO =====
     // F6 contém a data (E6 tem o rótulo "DATA:" do template)
     const dia = String(quoteDate.getDate()).padStart(2, '0');
