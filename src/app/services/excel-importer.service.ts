@@ -40,6 +40,10 @@ export class ExcelImporterService {
     'email',
     'e-mail',
     'vendedor',
+    'vendedor(a)',
+    'vendedora',
+    'vend.',
+    'vend',
     'ven. externo',
     'vendedor externo',
     'forma de pag',
@@ -316,7 +320,7 @@ export class ExcelImporterService {
       priceTable: this.findFieldValue(rows, ['tabela preco', 'tabela de preco']),
       contact: this.findFieldValue(rows, ['contato', 'at.', 'at']),
       email: this.findFieldValue(rows, ['email', 'e-mail']),
-      salesperson: this.findFieldValue(rows, ['vendedor']),
+      salesperson: this.findFieldValue(rows, ['vendedor', 'vendedor(a)', 'vendedora', 'vend.', 'vend']),
       externalSalesperson: this.findFieldValue(rows, ['ven. externo', 'vendedor externo'])
     };
 
