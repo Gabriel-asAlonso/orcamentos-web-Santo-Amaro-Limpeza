@@ -79,7 +79,7 @@ export class ExcelGeneratorSplashService {
     worksheet.getRow(9).height = 16;
 
     // ===== CONDIÇÕES COMERCIAIS =====
-    // A11:C11 mergido - rótulo em negrito + valor sem negrito (rich text)
+    // A11:D11 mergido - rótulo em negrito + valor sem negrito (rich text)
     const formaPagCell = worksheet.getCell('A11');
     const formaPagFont = formaPagCell.font || {};
     formaPagCell.value = {
@@ -94,8 +94,8 @@ export class ExcelGeneratorSplashService {
       vertical: 'middle'
     };
 
-    // D11 - rótulo em negrito + valor sem negrito (rich text)
-    const prazoCell = worksheet.getCell('D11');
+    // E11:F11 mergido - rótulo em negrito + valor sem negrito (rich text)
+    const prazoCell = worksheet.getCell('E11');
     const prazoFont = prazoCell.font || {};
     prazoCell.value = {
       richText: [
