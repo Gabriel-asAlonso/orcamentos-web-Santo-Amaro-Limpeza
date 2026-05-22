@@ -30,6 +30,15 @@ export class ExcelGeneratorSantoAmaroService {
     this.clearWorksheetRowGrouping(worksheet);
     worksheet.views = [{ showGridLines: false }];
 
+    // Limpar células com "#VALUE!" deixadas pelo recurso "Picture in Cell"
+    // do Excel 365 (ExcelJS não suporta esse formato e converte em erro)
+    this.clearValueErrors(worksheet);
+
+    // Inserir a logo programaticamente (substituindo a que estava como
+    // "Picture in Cell" no template). twoCellAnchor mantém a imagem
+    // ancorada à grade e evita deslocamento ao exportar PDF.
+    await this.insertCompanyLogo(workbook, worksheet);
+
     const customer = quote.customerData;
     const quoteDate = quote.date ? new Date(quote.date) : new Date();
 
@@ -332,6 +341,51 @@ export class ExcelGeneratorSantoAmaroService {
     try {
       worksheet.mergeCells(range);
     } catch {}
+  }
+
+  /**
+   * Limpa células com erro #VALUE! deixadas pelo Excel 365 quando se usa
+   * "Picture in Cell" (Insert > Picture > Place in Cell).
+   * Esse formato não é suportado pelo ExcelJS e fica como erro ao ler.
+   */
+  private clearValueErrors(worksheet: ExcelJS.Worksheet) {
+    for (let r = 1; r <= 10; r++) {
+      for (let c = 1; c <= 18; c++) {
+        const cell = worksheet.getRow(r).getCell(c);
+        const v = cell.value as any;
+        if (v && typeof v === 'object' && v.error === '#VALUE!') {
+          cell.value = null;
+        }
+      }
+    }
+  }
+
+  /**
+   * Insere a logo Santo Amaro como imagem flutuante usando twoCellAnchor.
+   * Substitui a "Picture in Cell" do template que não é compatível com ExcelJS.
+   */
+  private async insertCompanyLogo(
+    workbook: ExcelJS.Workbook,
+    worksheet: ExcelJS.Worksheet
+  ) {
+    try {
+      const logoResponse = await fetch('/logoSantoAmaroLimpeza.png');
+      if (!logoResponse.ok) return;
+
+      const logoBuffer = await logoResponse.arrayBuffer();
+      const logoId = workbook.addImage({
+        buffer: logoBuffer,
+        extension: 'png'
+      });
+
+      // Ancorar entre O2 e P5 (cobre as células onde estava a "Picture in Cell")
+      worksheet.addImage(logoId, {
+        tl: { col: 14, row: 1 } as any,
+        br: { col: 16, row: 5 } as any
+      });
+    } catch {
+      // Logo não encontrada, continua sem
+    }
   }
 
   private clearWorksheetRowGrouping(worksheet: ExcelJS.Worksheet) {
