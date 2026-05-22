@@ -185,16 +185,15 @@ export class ExcelGeneratorSantoAmaroService {
         this.applyStyle(cell, estiloProduto[col - 1]);
       }
 
-      // Recriar merge B:K (descrição) - referência foi removida
-      this.safeMerge(worksheet, `B${rowNumber}:K${rowNumber}`);
+      // Recriar merge B:L (descrição) - referência e Unid. foram removidas
+      this.safeMerge(worksheet, `B${rowNumber}:L${rowNumber}`);
 
       // Preencher dados
-      // A = Código | B(:K) = Descrição | L = Unid | M = Desc% | N = Qtde | O = Vl.Unit | P = Vl.Total
+      // A = Código | B(:L) = Descrição | M = Desc% | N = Qtde | O = Vl.Unit | P = Vl.Total
       linha.getCell(1).value = item.code ?? index + 1;     // A - Código
       linha.getCell(2).value = item.product ?? '';          // B - Descrição
-      linha.getCell(12).value = item.unit ?? 'unid.';       // L - Unidade
       linha.getCell(13).value = discount > 0 ? discount / 100 : 0; // M - Desc %
-      linha.getCell(14).value = item.quantity;              // N - Qtde
+      linha.getCell(14).value = Math.round(item.quantity ?? 0); // N - Qtde
       linha.getCell(15).value = item.unitPrice;             // O - Vl Unitário
       linha.getCell(16).value = totalProduto;               // P - Vl Total
 
@@ -203,6 +202,14 @@ export class ExcelGeneratorSantoAmaroService {
       linha.getCell(14).numFmt = '0';
       linha.getCell(15).numFmt = accountingFmt;
       linha.getCell(16).numFmt = accountingFmt;
+
+      // Alinhamento consistente em todas as linhas (justificação uniforme)
+      linha.getCell(1).alignment = { horizontal: 'center', vertical: 'middle', wrapText: false };
+      linha.getCell(2).alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
+      linha.getCell(13).alignment = { horizontal: 'center', vertical: 'middle', wrapText: false };
+      linha.getCell(14).alignment = { horizontal: 'center', vertical: 'middle', wrapText: false };
+      linha.getCell(15).alignment = { horizontal: 'right', vertical: 'middle', wrapText: false };
+      linha.getCell(16).alignment = { horizontal: 'right', vertical: 'middle', wrapText: false };
 
       linha.commit();
     });

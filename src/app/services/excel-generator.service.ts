@@ -170,18 +170,25 @@ export class ExcelGeneratorService {
 
       this.applyProductRowLayout(worksheet, rowNumber);
 
+      // Formato Accounting: cifrão à esquerda, número à direita (justificado)
+      const accountingFmt = '_-"R$" * #,##0.00_-;-"R$" * #,##0.00_-;_-"R$" * "-"??_-;_-@_-';
+
       linha.getCell(1).value = item.code ?? index + 1;
-      linha.getCell(2).value = item.reference ?? '';
+      // Coluna 2 (Referência) removida — fica vazia
+      linha.getCell(2).value = '';
       linha.getCell(4).value = item.product;
-      linha.getCell(12).value = item.unit;
+      // Unidade: garantir que é texto (não número) e sem quebra
+      linha.getCell(12).value = String(item.unit ?? 'unid.');
       linha.getCell(13).value = discount / 100;
       linha.getCell(14).value = Math.round(item.quantity ?? 0);
       linha.getCell(15).value = item.unitPrice;
       linha.getCell(16).value = totalProduto;
 
+      linha.getCell(12).numFmt = '@'; // texto
       linha.getCell(13).numFmt = '0.00%';
-      linha.getCell(15).numFmt = 'R$ #,##0.00';
-      linha.getCell(16).numFmt = 'R$ #,##0.00';
+      linha.getCell(14).numFmt = '0';
+      linha.getCell(15).numFmt = accountingFmt;
+      linha.getCell(16).numFmt = accountingFmt;
 
       linha.getCell(1).font = { size: 9 };
       linha.getCell(2).font = { size: 9 };
@@ -192,14 +199,15 @@ export class ExcelGeneratorService {
       linha.getCell(15).font = { size: 9 };
       linha.getCell(16).font = { size: 9 };
 
-      linha.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
-      linha.getCell(2).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+      // Alinhamento consistente em todas as linhas (justificação uniforme)
+      linha.getCell(1).alignment = { horizontal: 'center', vertical: 'middle', wrapText: false };
+      linha.getCell(2).alignment = { horizontal: 'center', vertical: 'middle', wrapText: false };
       linha.getCell(4).alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
-      linha.getCell(12).alignment = { horizontal: 'center', vertical: 'middle' };
-      linha.getCell(13).alignment = { horizontal: 'center', vertical: 'middle' };
-      linha.getCell(14).alignment = { horizontal: 'center', vertical: 'middle' };
-      linha.getCell(15).alignment = { horizontal: 'right', vertical: 'middle' };
-      linha.getCell(16).alignment = { horizontal: 'right', vertical: 'middle' };
+      linha.getCell(12).alignment = { horizontal: 'center', vertical: 'middle', wrapText: false };
+      linha.getCell(13).alignment = { horizontal: 'center', vertical: 'middle', wrapText: false };
+      linha.getCell(14).alignment = { horizontal: 'center', vertical: 'middle', wrapText: false };
+      linha.getCell(15).alignment = { horizontal: 'right', vertical: 'middle', wrapText: false };
+      linha.getCell(16).alignment = { horizontal: 'right', vertical: 'middle', wrapText: false };
 
       linha.commit();
     });
@@ -226,7 +234,7 @@ export class ExcelGeneratorService {
 
     worksheet.getCell(`A${linhaTotal}`).font = { bold: true, size: 11 };
     worksheet.getCell(`P${linhaTotal}`).font = { bold: true, size: 11 };
-    worksheet.getCell(`P${linhaTotal}`).numFmt = 'R$ #,##0.00';
+    worksheet.getCell(`P${linhaTotal}`).numFmt = '_-"R$" * #,##0.00_-;-"R$" * #,##0.00_-;_-"R$" * "-"??_-;_-@_-';
 
     worksheet.getCell(`A${linhaTotal}`).alignment = {
       horizontal: 'right',
