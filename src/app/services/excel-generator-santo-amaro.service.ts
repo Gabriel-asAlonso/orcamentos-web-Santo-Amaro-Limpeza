@@ -175,15 +175,13 @@ export class ExcelGeneratorSantoAmaroService {
         this.applyStyle(cell, estiloProduto[col - 1]);
       }
 
-      // Recriar merges B:C (referência) e D:K (descrição)
-      this.safeMerge(worksheet, `B${rowNumber}:C${rowNumber}`);
-      this.safeMerge(worksheet, `D${rowNumber}:K${rowNumber}`);
+      // Recriar merge B:K (descrição) - referência foi removida
+      this.safeMerge(worksheet, `B${rowNumber}:K${rowNumber}`);
 
       // Preencher dados
-      // A = Código | B(:C) = Referência | D(:K) = Descrição | L = Unid | M = Desc% | N = Qtde | O = Vl.Unit | P = Vl.Total
+      // A = Código | B(:K) = Descrição | L = Unid | M = Desc% | N = Qtde | O = Vl.Unit | P = Vl.Total
       linha.getCell(1).value = item.code ?? index + 1;     // A - Código
-      linha.getCell(2).value = item.reference ?? '';        // B - Referência
-      linha.getCell(4).value = item.product ?? '';          // D - Descrição
+      linha.getCell(2).value = item.product ?? '';          // B - Descrição
       linha.getCell(12).value = item.unit ?? 'unid.';       // L - Unidade
       linha.getCell(13).value = discount > 0 ? discount / 100 : 0; // M - Desc %
       linha.getCell(14).value = item.quantity;              // N - Qtde
