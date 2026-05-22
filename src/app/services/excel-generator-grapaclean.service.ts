@@ -59,10 +59,12 @@ export class ExcelGeneratorGrapaCleanService {
 
   private fillProducts(worksheet: ExcelJS.Worksheet, items: QuoteItem[]) {
     const linhaInicial = 15;
-    // Total fica em B33/E33/H33/J33 (FRETE, DESCONTO, TOTAL)
-    const linhaTotalOriginal = 33;
+    // Produtos modelo no template: 15-33 (19 linhas)
+    // Linha 34 vazia (separador)
+    // Linha 35: FRETE / DESCONTO / TOTAL
+    const ultimaLinhaProdutoModelo = 33;
     const quantidadeProdutos = Math.max(items.length, 1);
-    const quantidadeLinhasModelo = Math.max(linhaTotalOriginal - linhaInicial - 1, 1); // -1 para a linha vazia 32
+    const quantidadeLinhasModelo = ultimaLinhaProdutoModelo - linhaInicial + 1; // 19
     const linhasParaRemover = Math.max(quantidadeLinhasModelo - quantidadeProdutos, 0);
     const linhasParaAdicionar = Math.max(quantidadeProdutos - quantidadeLinhasModelo, 0);
 
@@ -79,11 +81,11 @@ export class ExcelGeneratorGrapaCleanService {
       return sum + (subtotal - subtotal * (discount / 100));
     }, 0);
 
-    // Ajustar quantidade de linhas
+    // Ajustar quantidade de linhas (inserir/remover ANTES da linha vazia 34)
     if (linhasParaAdicionar > 0) {
       this.spliceRowsInChunks(
         worksheet,
-        linhaTotalOriginal - 1, // antes da linha vazia 32
+        ultimaLinhaProdutoModelo + 1, // posição 34 (após último produto modelo)
         0,
         Array.from({ length: linhasParaAdicionar }, () => [])
       );
