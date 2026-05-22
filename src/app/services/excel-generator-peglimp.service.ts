@@ -160,8 +160,9 @@ export class ExcelGeneratorPegLimpService {
 
       // Formatação numérica
       linha.getCell(3).numFmt = '0';
-      linha.getCell(5).numFmt = 'R$ #,##0.00';
-      linha.getCell(6).numFmt = 'R$ #,##0.00';
+      // Formato Accounting: cifrão à esquerda, número à direita (justificado)
+      linha.getCell(5).numFmt = '_-"R$" * #,##0.00_-;-"R$" * #,##0.00_-;_-"R$" * "-"??_-;_-@_-';
+      linha.getCell(6).numFmt = '_-"R$" * #,##0.00_-;-"R$" * #,##0.00_-;_-"R$" * "-"??_-;_-@_-';
 
       linha.commit();
     });
@@ -169,15 +170,16 @@ export class ExcelGeneratorPegLimpService {
     // Atualizar o SUB-TOTAL e TOTAL nas linhas após o ajuste
     const novaLinhaSubTotal = linhaInicial + quantidadeProdutos;
 
-    // Atualizar SUB-TOTAL (coluna F agora)
+    // Atualizar SUB-TOTAL (coluna F agora) - Accounting format
+    const accountingFmt = '_-"R$" * #,##0.00_-;-"R$" * #,##0.00_-;_-"R$" * "-"??_-;_-@_-';
     const subTotalCell = worksheet.getCell(`F${novaLinhaSubTotal}`);
     subTotalCell.value = total;
-    subTotalCell.numFmt = 'R$ #,##0.00';
+    subTotalCell.numFmt = accountingFmt;
 
     // Atualizar TOTAL (linha SUB-TOTAL + 3, coluna F)
     const totalCell = worksheet.getCell(`F${novaLinhaSubTotal + 3}`);
     totalCell.value = total;
-    totalCell.numFmt = 'R$ #,##0.00';
+    totalCell.numFmt = accountingFmt;
   }
 
   private snapshotStyle(cell: ExcelJS.Cell) {
