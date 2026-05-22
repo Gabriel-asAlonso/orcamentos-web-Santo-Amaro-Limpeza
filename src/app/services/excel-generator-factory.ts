@@ -4,6 +4,7 @@ import { ExcelGeneratorService } from './excel-generator.service';
 import { ExcelGeneratorSplashService } from './excel-generator-splash.service';
 import { ExcelGeneratorPegLimpService } from './excel-generator-peglimp.service';
 import { ExcelGeneratorGrapaCleanService } from './excel-generator-grapaclean.service';
+import { ExcelGeneratorSantoAmaroService } from './excel-generator-santo-amaro.service';
 
 @Injectable({
   providedIn: 'root'
@@ -13,6 +14,7 @@ export class ExcelGeneratorFactory {
   private splashGenerator = inject(ExcelGeneratorSplashService);
   private pegLimpGenerator = inject(ExcelGeneratorPegLimpService);
   private grapaCleanGenerator = inject(ExcelGeneratorGrapaCleanService);
+  private santoAmaroGenerator = inject(ExcelGeneratorSantoAmaroService);
 
   getGenerator(companyId: string) {
     switch (companyId.toLowerCase()) {
@@ -22,8 +24,10 @@ export class ExcelGeneratorFactory {
         return this.pegLimpGenerator;
       case 'grapa-clean':
         return this.grapaCleanGenerator;
+      case 'santa limpeza':
+        return this.santoAmaroGenerator;
       default:
-        // Santa Limpeza, Laguna e outras empresas usam o gerador padrão
+        // Laguna e outras empresas usam o gerador padrão
         return this.defaultGenerator;
     }
   }
