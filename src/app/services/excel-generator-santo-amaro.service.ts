@@ -41,6 +41,15 @@ export class ExcelGeneratorSantoAmaroService {
     dataCell.numFmt = '@';
     dataCell.value = `${dia}/${mes}/${ano}`;
 
+    // DEBUG: imprime o customer recebido
+    console.log('[Santo Amaro] Customer recebido:', customer);
+    console.log('[Santo Amaro] Quote info:', {
+      label: quote.label,
+      source: (quote as any).source,
+      paymentMethod: quote.paymentMethod,
+      deliveryTime: quote.deliveryTime
+    });
+
     // ===== DADOS DO CLIENTE =====
     if (customer) {
       // C7:P7 mergido - Cliente
