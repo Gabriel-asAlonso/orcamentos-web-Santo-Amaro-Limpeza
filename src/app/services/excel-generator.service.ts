@@ -175,8 +175,9 @@ export class ExcelGeneratorService {
 
       linha.getCell(1).value = item.code ?? index + 1;
       // Descrição agora ocupa B:K mergido (era D:K com B:C de referência)
+      // IMPORTANTE: não tocar nas células filhas (D, E, ..., K) — qualquer
+      // escrita nelas apaga o conteúdo do master (B) no ExcelJS
       linha.getCell(2).value = item.product;
-      linha.getCell(4).value = null;
       // Unidade: garantir que é texto (não número) e sem quebra
       linha.getCell(12).value = String(item.unit ?? 'unid.');
       linha.getCell(13).value = discount / 100;
@@ -192,7 +193,6 @@ export class ExcelGeneratorService {
 
       linha.getCell(1).font = { size: 9 };
       linha.getCell(2).font = { size: 9 };
-      linha.getCell(4).font = { size: 9 };
       linha.getCell(12).font = { size: 9 };
       linha.getCell(13).font = { size: 9 };
       linha.getCell(14).font = { size: 9 };
