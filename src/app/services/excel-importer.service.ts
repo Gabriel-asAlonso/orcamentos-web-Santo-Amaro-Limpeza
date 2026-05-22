@@ -50,11 +50,17 @@ export class ExcelImporterService {
     'condicao de pagamento',
     'condicoes de pagamento',
     'pagamento',
+    'cond. pagto',
+    'cond pagto',
+    'cond. pagamento',
+    'cond pagamento',
     'prazo de entrega',
     'entrega',
     'prazo de pagamento',
     'prazo pagamento',
-    'data'
+    'data',
+    'data de emissao',
+    'data de emissão'
   ];
 
   async importProducts(file: File): Promise<ExcelImportResult> {
@@ -161,7 +167,11 @@ export class ExcelImporterService {
         'forma pagamento',
         'condicao de pagamento',
         'condicoes de pagamento',
-        'pagamento'
+        'pagamento',
+        'cond. pagto',
+        'cond pagto',
+        'cond. pagamento',
+        'cond pagamento'
       ])
     };
   }
