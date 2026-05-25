@@ -444,7 +444,7 @@ export class orcamentos {
       this.quotes = [];
       this.customerData = imported.customerData;
       this.mode = 'excel';
-      this.companyId = this.importedBaseCompanyId;
+      this.companyId = imported.companyId ?? this.importedBaseCompanyId;
       this.isImportedBaseLocked = true;
 
       if (imported.deliveryTime) {
