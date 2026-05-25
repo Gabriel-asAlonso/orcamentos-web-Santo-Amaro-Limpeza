@@ -27,17 +27,13 @@ export class ExcelGeneratorPegLimpService {
       throw new Error('Aba da planilha não encontrada');
     }
 
-    this.clearWorksheetRowGrouping(worksheet);
     worksheet.views = [{ showGridLines: false }];
-    worksheet.getColumn('B').width = (worksheet.getColumn('B').width ?? 8.43) + 2;
-    // Expandir coluna E para acomodar "PRAZO DE ENTREGA"
-    worksheet.getColumn('E').width = (worksheet.getColumn('E').width ?? 12) + 3;
 
     const quoteDate = quote.date ? new Date(quote.date) : new Date();
     const customer = quote.customerData;
 
     // DEBUG: imprime os campos que o Peg Limp usa
-    console.log('[Peg Limp] Customer recebido:', {
+    console.log('[Peg Limp] Novo Template - Customer recebido:', {
       client: customer?.client,
       document: customer?.document,
       address: customer?.address,
@@ -45,63 +41,48 @@ export class ExcelGeneratorPegLimpService {
     });
 
     // ===== DATA DO ORÇAMENTO =====
-    // E6 = "DATA: " (rótulo) | F6 = data
+    // E6 = DATA (valor)
     const dia = String(quoteDate.getDate()).padStart(2, '0');
     const mes = String(quoteDate.getMonth() + 1).padStart(2, '0');
     const ano = quoteDate.getFullYear();
-    const dataCell = worksheet.getCell('F6');
+    const dataCell = worksheet.getCell('E6');
     dataCell.numFmt = '@';
     dataCell.value = `${dia}/${mes}/${ano}`;
 
     // ===== DADOS DO CLIENTE =====
-    // Apenas: NOME (C6), CNPJ (C7), END. (C8), At./Contato (C9)
+    // Novo layout: NOME (B6), CNPJ (B7), END. (B8), At./Contato (B9)
     if (customer) {
       if (customer.client) {
-        const nomeCell = worksheet.getCell('C6');
-        nomeCell.value = String(customer.client).replace(/[\r\n]+/g, ' ').trim();
-        nomeCell.font = { bold: false };
+        worksheet.getCell('B6').value = String(customer.client).replace(/[\r\n]+/g, ' ').trim();
       }
       if (customer.document) {
-        worksheet.getCell('C7').value = String(customer.document).replace(/[\r\n]+/g, ' ').trim();
+        worksheet.getCell('B7').value = String(customer.document).replace(/[\r\n]+/g, ' ').trim();
       }
       if (customer.address) {
-        worksheet.getCell('C8').value = String(customer.address).replace(/[\r\n]+/g, ' ').trim();
+        worksheet.getCell('B8').value = String(customer.address).replace(/[\r\n]+/g, ' ').trim();
       }
       if (customer.contact) {
-        worksheet.getCell('C9').value = String(customer.contact).replace(/[\r\n]+/g, ' ').trim();
+        worksheet.getCell('B9').value = String(customer.contact).replace(/[\r\n]+/g, ' ').trim();
       }
     }
 
-    // ===== CONDIÇÕES COMERCIAIS (linha 70) =====
-    // B70 - rótulo + valor "FORMA DE PAG.: <valor>"
-    const formaPagCell = worksheet.getCell('B70');
-    const formaPagFont = { bold: true, size: formaPagCell.font?.size || 10 };
-    formaPagCell.value = {
-      richText: [
-        { text: 'FORMA DE PAG.:  ', font: formaPagFont },
-        { text: `${quote.paymentMethod ?? ''}`, font: { bold: false, size: formaPagCell.font?.size || 10 } }
-      ]
-    };
-    formaPagCell.alignment = {
-      wrapText: true,
-      vertical: 'middle',
-      horizontal: 'left'
-    };
+    // ===== CONDIÇÕES COMERCIAIS (linha 31) =====
+    // A31 - FORMA DE PAG.
+    // E31 - PRAZO DE ENTREGA (já tem o rótulo no template)
 
-    // E70 - rótulo + valor "PRAZO DE ENTREGA: <valor>"
-    const prazoCell = worksheet.getCell('E70');
-    const prazoFont = { bold: true, size: prazoCell.font?.size || 10 };
-    prazoCell.value = {
-      richText: [
-        { text: 'PRAZO DE ENTREGA:  ', font: prazoFont },
-        { text: `${quote.deliveryTime ?? ''}`, font: { bold: false, size: prazoCell.font?.size || 10 } }
-      ]
-    };
-    prazoCell.alignment = {
-      wrapText: true,
-      vertical: 'middle',
-      horizontal: 'left'
-    };
+    // Atualizar apenas os valores, preservando rótulos do template
+    if (quote.paymentMethod) {
+      worksheet.getCell('B31').value = quote.paymentMethod;
+    }
+
+    // E31 já contém o rótulo "PRAZO DE ENTREGA:", então vamos adicionar o valor após
+    if (quote.deliveryTime) {
+      const prazoCell = worksheet.getCell('E31');
+      const currentText = String(prazoCell.value || '');
+      if (!currentText.includes(quote.deliveryTime)) {
+        prazoCell.value = `${currentText} ${quote.deliveryTime}`;
+      }
+    }
 
     // ===== PRODUTOS =====
     this.fillProducts(worksheet, quote.items);
@@ -115,27 +96,17 @@ export class ExcelGeneratorPegLimpService {
   }
 
   private fillProducts(worksheet: ExcelJS.Worksheet, items: QuoteItem[]) {
-    const linhaInicial = 14;
-    // Encontra dinamicamente onde está o SUB-TOTAL (primeira linha da seção de totais)
-    // Estrutura: produtos | SUB-TOTAL | DESCONTO | FRETE | TOTAL
-    const linhaSubTotal =
-      this.findRowContaining(worksheet, 'sub-total', linhaInicial, 200) ??
-      this.findRowContaining(worksheet, 'subtotal', linhaInicial, 200) ??
-      65;
-    const quantidadeProdutos = Math.max(items.length, 1);
-    const quantidadeLinhasModelo = Math.max(linhaSubTotal - linhaInicial, 1);
-    const linhasParaRemover = Math.max(quantidadeLinhasModelo - quantidadeProdutos, 0);
-    const linhasParaAdicionar = Math.max(quantidadeProdutos - quantidadeLinhasModelo, 0);
+    const linhaInicial = 14;  // Primeira linha de produto
+    const linhaFinal = 25;    // Última linha de produto (12 produtos)
+    const linhaSubTotal = 26; // SUB-TOTAL está em linha 26
 
-    // Capturar dois estilos: linha branca (14) e linha cinza (19) para alternância zebra
-    // Agora são 5 colunas: B (ITEM), C (QTDE), D (DESCRIÇÃO), E (VALOR UNIT), F (VALOR TOTAL)
-    const estiloBranco = Array.from({ length: 5 }, (_, c) =>
-      this.snapshotStyle(worksheet.getRow(14).getCell(c + 2))
+    const quantidadeProdutos = Math.max(Math.min(items.length, 12), 1); // Máximo 12 produtos
+
+    // Capturar estilo da primeira linha de produto
+    const estiloProduto = Array.from({ length: 5 }, (_, c) =>
+      this.snapshotStyle(worksheet.getRow(linhaInicial).getCell(c + 1))
     );
-    const estiloCinza = Array.from({ length: 5 }, (_, c) =>
-      this.snapshotStyle(worksheet.getRow(19).getCell(c + 2))
-    );
-    const alturaProduto = worksheet.getRow(linhaInicial).height ?? 16;
+    const alturaProduto = worksheet.getRow(linhaInicial).height ?? 20;
 
     // Calcular total
     const total = items.reduce((sum, item) => {
@@ -144,26 +115,8 @@ export class ExcelGeneratorPegLimpService {
       return sum + (subtotal - subtotal * (discount / 100));
     }, 0);
 
-    // Ajustar quantidade de linhas (preserva total + rodapé que estão em 65-70)
-    if (linhasParaAdicionar > 0) {
-      this.spliceRowsInChunks(
-        worksheet,
-        linhaSubTotal,
-        0,
-        Array.from({ length: linhasParaAdicionar }, () => [])
-      );
-    }
-
-    if (linhasParaRemover > 0) {
-      this.spliceRowsInChunks(
-        worksheet,
-        linhaInicial + quantidadeProdutos,
-        linhasParaRemover
-      );
-    }
-
-    // Preencher produtos
-    items.forEach((item, index) => {
+    // Preencher produtos (linhas 14-25)
+    items.slice(0, 12).forEach((item, index) => {
       const rowNumber = linhaInicial + index;
       const linha = worksheet.getRow(rowNumber);
       const discount = item.discount ?? 0;
@@ -172,56 +125,44 @@ export class ExcelGeneratorPegLimpService {
 
       linha.height = alturaProduto;
 
-      // Alternância zebra: linhas pares (0, 2, 4...) brancas, ímpares (1, 3, 5...) cinzas
-      const estiloLinha = index % 2 === 0 ? estiloBranco : estiloCinza;
-
-      // Aplicar estilo capturado - colunas B (2) a F (6)
-      for (let col = 2; col <= 6; col++) {
-        const cell = linha.getCell(col);
-        cell.value = null;
-        this.applyStyle(cell, estiloLinha[col - 2]);
-      }
-
-      // Preencher dados (B=Item, C=Qtde, D=Descrição, E=Vl Unit, F=Vl Total)
-      const itemCell = linha.getCell(2);
-      itemCell.value = index + 1;                       // B - ITEM
-      itemCell.font = { bold: false };
-
-      linha.getCell(3).value = Math.round(item.quantity ?? 0);  // C - QTDE (sempre inteiro)
-      linha.getCell(4).value = item.product ?? '';    // D - DESCRIÇÃO
-      linha.getCell(5).value = item.unitPrice;        // E - VALOR UNIT
-      linha.getCell(6).value = totalProduto;          // F - VALOR TOTAL
+      // Preencher dados: A=Item, B=Qtde, C=Descrição, D=Valor Unit, E=Valor Total
+      linha.getCell(1).value = index + 1;                       // A - ITEM
+      linha.getCell(2).value = Math.round(item.quantity ?? 0);  // B - QTDE
+      linha.getCell(3).value = item.product ?? '';              // C - DESCRIÇÃO
+      linha.getCell(4).value = item.unitPrice;                  // D - VALOR UNIT
+      linha.getCell(5).value = totalProduto;                    // E - VALOR TOTAL
 
       // Formatação numérica
-      linha.getCell(3).numFmt = '0';
-      // Formato Accounting: cifrão à esquerda, número à direita (justificado)
+      linha.getCell(2).numFmt = '0';
+      // Formato Accounting: cifrão à esquerda, número à direita
+      linha.getCell(4).numFmt = '_-"R$" * #,##0.00_-;-"R$" * #,##0.00_-;_-"R$" * "-"??_-;_-@_-';
       linha.getCell(5).numFmt = '_-"R$" * #,##0.00_-;-"R$" * #,##0.00_-;_-"R$" * "-"??_-;_-@_-';
-      linha.getCell(6).numFmt = '_-"R$" * #,##0.00_-;-"R$" * #,##0.00_-;_-"R$" * "-"??_-;_-@_-';
 
       linha.commit();
     });
 
-    // Atualizar o SUB-TOTAL e TOTAL nas linhas após o ajuste
-    const novaLinhaSubTotal = linhaInicial + quantidadeProdutos;
-
-    // Atualizar SUB-TOTAL (coluna F agora) - Accounting format
-    const accountingFmt = '_-"R$" * #,##0.00_-;-"R$" * #,##0.00_-;_-"R$" * "-"??_-;_-@_-';
-    const subTotalCell = worksheet.getCell(`F${novaLinhaSubTotal}`);
-    subTotalCell.value = total;
-    subTotalCell.numFmt = accountingFmt;
-
-    // Atualizar TOTAL (linha SUB-TOTAL + 3, coluna F)
-    const totalCell = worksheet.getCell(`F${novaLinhaSubTotal + 3}`);
-    totalCell.value = total;
-    totalCell.numFmt = accountingFmt;
-
-    // ===== DELETAR LINHAS VAZIAS APÓS O TOTAL =====
-    // Após o TOTAL, deletar todas as linhas até o final para evitar páginas em branco no PDF
-    const lastContentRow = novaLinhaSubTotal + 4; // TOTAL está em novaLinhaSubTotal + 3
-    const totalRows = worksheet.rowCount;
-    if (totalRows > lastContentRow) {
-      worksheet.spliceRows(lastContentRow + 1, totalRows - lastContentRow);
+    // Limpar linhas não utilizadas de produtos (se menos de 12 produtos)
+    for (let row = linhaInicial + quantidadeProdutos; row <= linhaFinal; row++) {
+      const linha = worksheet.getRow(row);
+      for (let col = 1; col <= 5; col++) {
+        linha.getCell(col).value = null;
+      }
     }
+
+    // ===== TOTAIS (linhas 26-29) =====
+    // Linha 26: SUB-TOTAL
+    worksheet.getCell('E26').value = total;
+    worksheet.getCell('E26').numFmt = '_-"R$" * #,##0.00_-;-"R$" * #,##0.00_-;_-"R$" * "-"??_-;_-@_-';
+
+    // Linha 27: DESCONTO (deixar vazio ou com valor se houver desconto global)
+    // worksheet.getCell('E27') já tem o rótulo
+
+    // Linha 28: FRETE (deixar vazio ou com valor)
+    // worksheet.getCell('E28') já tem o rótulo
+
+    // Linha 29: TOTAL
+    worksheet.getCell('E29').value = total;
+    worksheet.getCell('E29').numFmt = '_-"R$" * #,##0.00_-;-"R$" * #,##0.00_-;_-"R$" * "-"??_-;_-@_-';
   }
 
   /**
