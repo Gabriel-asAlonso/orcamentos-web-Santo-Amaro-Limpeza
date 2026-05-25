@@ -67,16 +67,16 @@ export class ExcelGeneratorPegLimpService {
     }
 
     // ===== CONDIÇÕES COMERCIAIS (linha 31) =====
-    // B31 - FORMA DE PAG. (valor apenas, rótulo já no template em A31)
-    // D31 - PRAZO DE ENTREGA (valor apenas, rótulo já no template em C31)
+    // A31 - FORMA DE PAG. (rótulo + valor, célula B31 deve ficar vazia)
+    // E31 - PRAZO DE ENTREGA (rótulo + valor, célula D31 deve ficar vazia)
 
-    // Limpar e preencher FORMA DE PAG.
-    const formaPagCell = worksheet.getCell('B31');
-    formaPagCell.value = quote.paymentMethod ?? '';
+    // FORMA DE PAG.: escrever rótulo + valor em A31 e limpar B31 para evitar duplicação
+    worksheet.getCell('A31').value = `FORMA DE PAG.: ${quote.paymentMethod ?? ''}`.trim();
+    worksheet.getCell('B31').value = null;
 
-    // Preencher PRAZO DE ENTREGA (apenas o valor, sem concatenar)
-    const prazoCell = worksheet.getCell('D31');
-    prazoCell.value = quote.deliveryTime ?? '';
+    // PRAZO DE ENTREGA: escrever rótulo + valor em E31 e limpar D31 para evitar duplicação
+    worksheet.getCell('E31').value = `PRAZO DE ENTREGA: ${quote.deliveryTime ?? ''}`.trim();
+    worksheet.getCell('D31').value = null;
 
     // ===== PRODUTOS =====
     this.fillProducts(worksheet, quote.items);
