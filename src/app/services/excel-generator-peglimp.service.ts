@@ -73,7 +73,9 @@ export class ExcelGeneratorPegLimpService {
     // ===== CONDIÇÕES COMERCIAIS =====
     // Procurar dinamicamente pelos campos no template
     const formaPagAddress = this.findCellContaining(worksheet, 'forma de pag');
-    const prazoAddress = this.findCellContaining(worksheet, 'prazo de entrega');
+    const prazoAddress = this.findCellContaining(worksheet, 'prazo');
+
+    console.log('[Peg Limp] Campos encontrados:', { formaPagAddress, prazoAddress });
 
     // FORMA DE PAG
     if (formaPagAddress) {
