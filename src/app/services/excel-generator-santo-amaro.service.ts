@@ -370,7 +370,10 @@ export class ExcelGeneratorSantoAmaroService {
   ) {
     try {
       const logoResponse = await fetch('/logoSantoAmaroLimpeza.jpeg');
-      if (!logoResponse.ok) return;
+      if (!logoResponse.ok) {
+        console.warn('[Santo Amaro] Logo não encontrada:', logoResponse.status, logoResponse.statusText);
+        return;
+      }
 
       const logoBuffer = await logoResponse.arrayBuffer();
       const logoId = workbook.addImage({
@@ -378,13 +381,13 @@ export class ExcelGeneratorSantoAmaroService {
         extension: 'jpeg'
       });
 
-      // Ancorar entre O2 e P5 (cobre as células onde estava a "Picture in Cell")
       worksheet.addImage(logoId, {
         tl: { col: 14, row: 1 } as any,
         br: { col: 16, row: 5 } as any
       });
-    } catch {
-      // Logo não encontrada, continua sem
+      console.log('[Santo Amaro] Logo inserida com sucesso');
+    } catch (error) {
+      console.error('[Santo Amaro] Erro ao inserir logo:', error);
     }
   }
 
