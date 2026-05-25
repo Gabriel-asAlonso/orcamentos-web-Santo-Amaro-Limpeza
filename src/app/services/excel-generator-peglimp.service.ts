@@ -78,6 +78,14 @@ export class ExcelGeneratorPegLimpService {
     worksheet.getCell('E31').value = `PRAZO DE ENTREGA: ${quote.deliveryTime ?? ''}`.trim();
     worksheet.getCell('D31').value = null;
 
+    // ===== AJUSTE DE BORDA FALTANTE =====
+    // A célula A12 está sem a borda esquerda no template; aplica thin preservando as outras
+    const a12 = worksheet.getCell('A12');
+    a12.border = {
+      ...(a12.border ?? {}),
+      left: { style: 'thin', color: { argb: 'FF000000' } }
+    };
+
     // ===== PRODUTOS =====
     this.fillProducts(worksheet, quote.items);
 
