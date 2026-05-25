@@ -67,40 +67,32 @@ export class ExcelGeneratorPegLimpService {
     const formaPagAddress = this.findCellContaining(worksheet, 'forma de pag');
     const prazoAddress = this.findCellContaining(worksheet, 'prazo');
 
-    // FORMA DE PAG
+    // FORMA DE PAG (suporta células mescladas)
     if (formaPagAddress) {
       const formaPagCell = worksheet.getCell(formaPagAddress);
-      const formaPagFont = { bold: true, size: formaPagCell.font?.size || 10 };
-      formaPagCell.value = {
-        richText: [
-          { text: 'FORMA DE PAG.:  ', font: formaPagFont },
-          { text: `${quote.paymentMethod ?? ''}`, font: { bold: false, size: formaPagCell.font?.size || 10 } }
-        ]
-      };
+      const paymentMethodText = quote.paymentMethod ?? '';
+
+      formaPagCell.value = `FORMA DE PAG.: ${paymentMethodText}`;
       formaPagCell.alignment = {
         wrapText: true,
-        vertical: 'middle',
+        vertical: 'top',
         horizontal: 'left'
       };
+      formaPagCell.font = { bold: false, size: 10 };
     }
 
     // PRAZO DE ENTREGA (suporta células mescladas)
     if (prazoAddress) {
       const prazoCell = worksheet.getCell(prazoAddress);
-      const prazoFont = { bold: true, size: 10 };
       const deliveryTimeText = quote.deliveryTime ?? '';
 
-      prazoCell.value = {
-        richText: [
-          { text: 'PRAZO DE ENTREGA:  ', font: prazoFont },
-          { text: deliveryTimeText, font: { bold: false, size: 10 } }
-        ]
-      };
+      prazoCell.value = `PRAZO DE ENTREGA: ${deliveryTimeText}`;
       prazoCell.alignment = {
         wrapText: true,
         vertical: 'top',
         horizontal: 'left'
       };
+      prazoCell.font = { bold: false, size: 10 };
     }
 
     // ===== PRODUTOS =====
