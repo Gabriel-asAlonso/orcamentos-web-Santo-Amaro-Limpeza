@@ -623,8 +623,8 @@ export class ExcelGeneratorService {
     // imagem). Com twoCellAnchor a imagem fica ancorada à grade e mantém
     // proporção igual em todos os apps.
     worksheet.addImage(logoId, {
-      tl: { col: 0.99, row: 2.20 } as any,
-      br: { col: 1.99, row: 5.20 } as any
+      tl: { col: 0.7, row: 1.95 } as any,
+      br: { col: 2.3, row: 5.45 } as any
     });
   }
 
