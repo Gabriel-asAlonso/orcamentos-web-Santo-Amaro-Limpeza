@@ -70,36 +70,44 @@ export class ExcelGeneratorPegLimpService {
       }
     }
 
-    // ===== CONDIÇÕES COMERCIAIS (linha 70) =====
-    // B70 - rótulo + valor "FORMA DE PAG.: <valor>"
-    const formaPagCell = worksheet.getCell('B70');
-    const formaPagFont = { bold: true, size: formaPagCell.font?.size || 10 };
-    formaPagCell.value = {
-      richText: [
-        { text: 'FORMA DE PAG.:  ', font: formaPagFont },
-        { text: `${quote.paymentMethod ?? ''}`, font: { bold: false, size: formaPagCell.font?.size || 10 } }
-      ]
-    };
-    formaPagCell.alignment = {
-      wrapText: true,
-      vertical: 'middle',
-      horizontal: 'left'
-    };
+    // ===== CONDIÇÕES COMERCIAIS =====
+    // Procurar dinamicamente pelos campos no template
+    const formaPagAddress = this.findCellContaining(worksheet, 'forma de pag');
+    const prazoAddress = this.findCellContaining(worksheet, 'prazo de entrega');
 
-    // E70 - rótulo + valor "PRAZO DE ENTREGA: <valor>"
-    const prazoCell = worksheet.getCell('E70');
-    const prazoFont = { bold: true, size: prazoCell.font?.size || 10 };
-    prazoCell.value = {
-      richText: [
-        { text: 'PRAZO DE ENTREGA:  ', font: prazoFont },
-        { text: `${quote.deliveryTime ?? ''}`, font: { bold: false, size: prazoCell.font?.size || 10 } }
-      ]
-    };
-    prazoCell.alignment = {
-      wrapText: true,
-      vertical: 'middle',
-      horizontal: 'left'
-    };
+    // FORMA DE PAG
+    if (formaPagAddress) {
+      const formaPagCell = worksheet.getCell(formaPagAddress);
+      const formaPagFont = { bold: true, size: formaPagCell.font?.size || 10 };
+      formaPagCell.value = {
+        richText: [
+          { text: 'FORMA DE PAG.:  ', font: formaPagFont },
+          { text: `${quote.paymentMethod ?? ''}`, font: { bold: false, size: formaPagCell.font?.size || 10 } }
+        ]
+      };
+      formaPagCell.alignment = {
+        wrapText: true,
+        vertical: 'middle',
+        horizontal: 'left'
+      };
+    }
+
+    // PRAZO DE ENTREGA (suporta células mescladas)
+    if (prazoAddress) {
+      const prazoCell = worksheet.getCell(prazoAddress);
+      const prazoFont = { bold: true, size: prazoCell.font?.size || 10 };
+      prazoCell.value = {
+        richText: [
+          { text: 'PRAZO DE ENTREGA:  ', font: prazoFont },
+          { text: `${quote.deliveryTime ?? ''}`, font: { bold: false, size: prazoCell.font?.size || 10 } }
+        ]
+      };
+      prazoCell.alignment = {
+        wrapText: true,
+        vertical: 'middle',
+        horizontal: 'left'
+      };
+    }
 
     // ===== PRODUTOS =====
     this.fillProducts(worksheet, quote.items);
@@ -209,6 +217,27 @@ export class ExcelGeneratorPegLimpService {
     const totalCell = worksheet.getCell(`F${novaLinhaSubTotal + 3}`);
     totalCell.value = total;
     totalCell.numFmt = accountingFmt;
+  }
+
+  private findCellContaining(worksheet: ExcelJS.Worksheet, searchText: string): string | undefined {
+    const target = searchText.toLowerCase();
+    for (let row = 1; row <= Math.min(worksheet.rowCount, 100); row++) {
+      for (let col = 1; col <= 16; col++) {
+        const cell = worksheet.getCell(row, col);
+        let cellText = '';
+
+        if (typeof cell.value === 'string') {
+          cellText = cell.value;
+        } else if (cell.value && typeof cell.value === 'object' && (cell.value as any).richText) {
+          cellText = (cell.value as any).richText.map((x: any) => x.text).join('');
+        }
+
+        if (cellText.toLowerCase().includes(target)) {
+          return cell.address;
+        }
+      }
+    }
+    return undefined;
   }
 
   /**
