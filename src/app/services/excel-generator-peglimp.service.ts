@@ -36,14 +36,6 @@ export class ExcelGeneratorPegLimpService {
     const quoteDate = quote.date ? new Date(quote.date) : new Date();
     const customer = quote.customerData;
 
-    // DEBUG: imprime os campos que o Peg Limp usa
-    console.log('[Peg Limp] Customer recebido:', {
-      client: customer?.client,
-      document: customer?.document,
-      address: customer?.address,
-      contact: customer?.contact
-    });
-
     // ===== DATA DO ORÇAMENTO =====
     // E6 = "DATA: " (rótulo) | F6 = data
     const dia = String(quoteDate.getDate()).padStart(2, '0');
@@ -75,8 +67,6 @@ export class ExcelGeneratorPegLimpService {
     const formaPagAddress = this.findCellContaining(worksheet, 'forma de pag');
     const prazoAddress = this.findCellContaining(worksheet, 'prazo');
 
-    console.log('[Peg Limp] Campos encontrados:', { formaPagAddress, prazoAddress });
-
     // FORMA DE PAG
     if (formaPagAddress) {
       const formaPagCell = worksheet.getCell(formaPagAddress);
@@ -100,8 +90,6 @@ export class ExcelGeneratorPegLimpService {
       const prazoFont = { bold: true, size: 10 };
       const deliveryTimeText = quote.deliveryTime ?? '';
 
-      console.log('[Peg Limp] Atualizando prazo em', prazoAddress, 'com valor:', deliveryTimeText);
-
       prazoCell.value = {
         richText: [
           { text: 'PRAZO DE ENTREGA:  ', font: prazoFont },
@@ -113,8 +101,6 @@ export class ExcelGeneratorPegLimpService {
         vertical: 'top',
         horizontal: 'left'
       };
-
-      console.log('[Peg Limp] Prazo atualizado:', prazoCell.value);
     }
 
     // ===== PRODUTOS =====
