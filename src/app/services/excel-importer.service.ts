@@ -337,8 +337,13 @@ export class ExcelImporterService {
     return COMPANIES.find(company => {
       const companyName = this.normalize(company.name);
       const cnpj = this.normalize(company.cnpj ?? company.taxId ?? '');
+      const aliases = (company.aliases ?? []).map(alias => this.normalize(alias));
 
-      return (companyName && headerText.includes(companyName)) || (cnpj && headerText.includes(cnpj));
+      return (
+        (companyName && headerText.includes(companyName)) ||
+        (cnpj && headerText.includes(cnpj)) ||
+        aliases.some(alias => headerText.includes(alias))
+      );
     })?.id;
   }
 
