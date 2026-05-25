@@ -67,22 +67,16 @@ export class ExcelGeneratorPegLimpService {
     }
 
     // ===== CONDIÇÕES COMERCIAIS (linha 31) =====
-    // A31 - FORMA DE PAG.
-    // E31 - PRAZO DE ENTREGA (já tem o rótulo no template)
+    // B31 - FORMA DE PAG. (valor apenas, rótulo já no template em A31)
+    // D31 - PRAZO DE ENTREGA (valor apenas, rótulo já no template em C31)
 
-    // Atualizar apenas os valores, preservando rótulos do template
-    if (quote.paymentMethod) {
-      worksheet.getCell('B31').value = quote.paymentMethod;
-    }
+    // Limpar e preencher FORMA DE PAG.
+    const formaPagCell = worksheet.getCell('B31');
+    formaPagCell.value = quote.paymentMethod ?? '';
 
-    // E31 já contém o rótulo "PRAZO DE ENTREGA:", então vamos adicionar o valor após
-    if (quote.deliveryTime) {
-      const prazoCell = worksheet.getCell('E31');
-      const currentText = String(prazoCell.value || '');
-      if (!currentText.includes(quote.deliveryTime)) {
-        prazoCell.value = `${currentText} ${quote.deliveryTime}`;
-      }
-    }
+    // Preencher PRAZO DE ENTREGA (apenas o valor, sem concatenar)
+    const prazoCell = worksheet.getCell('D31');
+    prazoCell.value = quote.deliveryTime ?? '';
 
     // ===== PRODUTOS =====
     this.fillProducts(worksheet, quote.items);
@@ -97,15 +91,20 @@ export class ExcelGeneratorPegLimpService {
 
   private fillProducts(worksheet: ExcelJS.Worksheet, items: QuoteItem[]) {
     const linhaInicial = 14;  // Primeira linha de produto
-    const linhaFinal = 25;    // Última linha de produto (12 produtos)
-    const linhaSubTotal = 26; // SUB-TOTAL está em linha 26
+    const linhaModeloTotais = 26; // Linha onde SUB-TOTAL começa (será movida se necessário)
 
-    const quantidadeProdutos = Math.max(Math.min(items.length, 12), 1); // Máximo 12 produtos
+    const quantidadeProdutos = items.length;
+    const linhasDisponíveis = 12; // Template tem 12 linhas de produto (14-25)
+    const linhasParaAdicionar = Math.max(quantidadeProdutos - linhasDisponíveis, 0);
 
-    // Capturar estilo da primeira linha de produto
-    const estiloProduto = Array.from({ length: 5 }, (_, c) =>
-      this.snapshotStyle(worksheet.getRow(linhaInicial).getCell(c + 1))
-    );
+    // Se houver mais de 12 produtos, inserir linhas extras ANTES do SUB-TOTAL
+    if (linhasParaAdicionar > 0) {
+      // Inserir linhas após linha 25 (antes de onde está o SUB-TOTAL)
+      worksheet.spliceRows(26, 0, ...Array(linhasParaAdicionar).fill([]));
+    }
+
+    // Capturar estilo da primeira linha de produto para copiar
+    const estiloProduto = this.snapshotStyle(worksheet.getRow(linhaInicial).getCell(1));
     const alturaProduto = worksheet.getRow(linhaInicial).height ?? 20;
 
     // Calcular total
@@ -115,8 +114,8 @@ export class ExcelGeneratorPegLimpService {
       return sum + (subtotal - subtotal * (discount / 100));
     }, 0);
 
-    // Preencher produtos (linhas 14-25)
-    items.slice(0, 12).forEach((item, index) => {
+    // ===== PREENCHER PRODUTOS =====
+    items.forEach((item, index) => {
       const rowNumber = linhaInicial + index;
       const linha = worksheet.getRow(rowNumber);
       const discount = item.discount ?? 0;
@@ -141,28 +140,22 @@ export class ExcelGeneratorPegLimpService {
       linha.commit();
     });
 
-    // Limpar linhas não utilizadas de produtos (se menos de 12 produtos)
-    for (let row = linhaInicial + quantidadeProdutos; row <= linhaFinal; row++) {
-      const linha = worksheet.getRow(row);
-      for (let col = 1; col <= 5; col++) {
-        linha.getCell(col).value = null;
-      }
-    }
+    // ===== TOTAIS (agora em linha dinâmica) =====
+    const novaLinhaSubTotal = linhaInicial + quantidadeProdutos;
 
-    // ===== TOTAIS (linhas 26-29) =====
-    // Linha 26: SUB-TOTAL
-    worksheet.getCell('E26').value = total;
-    worksheet.getCell('E26').numFmt = '_-"R$" * #,##0.00_-;-"R$" * #,##0.00_-;_-"R$" * "-"??_-;_-@_-';
+    // SUB-TOTAL
+    worksheet.getCell(`E${novaLinhaSubTotal}`).value = total;
+    worksheet.getCell(`E${novaLinhaSubTotal}`).numFmt = '_-"R$" * #,##0.00_-;-"R$" * #,##0.00_-;_-"R$" * "-"??_-;_-@_-';
 
-    // Linha 27: DESCONTO (deixar vazio ou com valor se houver desconto global)
-    // worksheet.getCell('E27') já tem o rótulo
+    // DESCONTO (linha seguinte)
+    worksheet.getCell(`E${novaLinhaSubTotal + 1}`).value = null;
 
-    // Linha 28: FRETE (deixar vazio ou com valor)
-    // worksheet.getCell('E28') já tem o rótulo
+    // FRETE (linha seguinte)
+    worksheet.getCell(`E${novaLinhaSubTotal + 2}`).value = null;
 
-    // Linha 29: TOTAL
-    worksheet.getCell('E29').value = total;
-    worksheet.getCell('E29').numFmt = '_-"R$" * #,##0.00_-;-"R$" * #,##0.00_-;_-"R$" * "-"??_-;_-@_-';
+    // TOTAL (linha seguinte)
+    worksheet.getCell(`E${novaLinhaSubTotal + 3}`).value = total;
+    worksheet.getCell(`E${novaLinhaSubTotal + 3}`).numFmt = '_-"R$" * #,##0.00_-;-"R$" * #,##0.00_-;_-"R$" * "-"??_-;_-@_-';
   }
 
   /**
