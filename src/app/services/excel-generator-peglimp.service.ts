@@ -36,14 +36,6 @@ export class ExcelGeneratorPegLimpService {
     const quoteDate = quote.date ? new Date(quote.date) : new Date();
     const customer = quote.customerData;
 
-    // DEBUG: imprime os campos que o Peg Limp usa
-    console.log('[Peg Limp] Customer recebido:', {
-      client: customer?.client,
-      document: customer?.document,
-      address: customer?.address,
-      contact: customer?.contact
-    });
-
     // ===== DATA DO ORÇAMENTO =====
     // E6 = "DATA: " (rótulo) | F6 = data
     const dia = String(quoteDate.getDate()).padStart(2, '0');
@@ -75,8 +67,6 @@ export class ExcelGeneratorPegLimpService {
     const formaPagAddress = this.findCellContaining(worksheet, 'forma de pag');
     const prazoAddress = this.findCellContaining(worksheet, 'prazo');
 
-    console.log('[Peg Limp] Campos encontrados:', { formaPagAddress, prazoAddress });
-
     // FORMA DE PAG
     if (formaPagAddress) {
       const formaPagCell = worksheet.getCell(formaPagAddress);
@@ -97,16 +87,18 @@ export class ExcelGeneratorPegLimpService {
     // PRAZO DE ENTREGA (suporta células mescladas)
     if (prazoAddress) {
       const prazoCell = worksheet.getCell(prazoAddress);
-      const prazoFont = { bold: true, size: prazoCell.font?.size || 10 };
+      const prazoFont = { bold: true, size: 10 };
+      const deliveryTimeText = quote.deliveryTime ?? '';
+
       prazoCell.value = {
         richText: [
           { text: 'PRAZO DE ENTREGA:  ', font: prazoFont },
-          { text: `${quote.deliveryTime ?? ''}`, font: { bold: false, size: prazoCell.font?.size || 10 } }
+          { text: deliveryTimeText, font: { bold: false, size: 10 } }
         ]
       };
       prazoCell.alignment = {
         wrapText: true,
-        vertical: 'middle',
+        vertical: 'top',
         horizontal: 'left'
       };
     }
