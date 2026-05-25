@@ -166,9 +166,9 @@ export class ExcelGeneratorGrapaCleanService {
 
       // Formatação numérica
       linha.getCell(6).numFmt = '0';
-      linha.getCell(8).numFmt = 'R$ #,##0.00';
+      linha.getCell(8).numFmt = '_-"R$" * #,##0.00_-;-"R$" * #,##0.00_-;_-"R$" * "-"??_-;_-@_-';
       if (discount > 0) linha.getCell(9).numFmt = '0.00%';
-      linha.getCell(10).numFmt = 'R$ #,##0.00';
+      linha.getCell(10).numFmt = '_-"R$" * #,##0.00_-;-"R$" * #,##0.00_-;_-"R$" * "-"??_-;_-@_-';
 
       linha.commit();
     });
@@ -177,7 +177,7 @@ export class ExcelGeneratorGrapaCleanService {
     const novaLinhaTotal = linhaInicial + quantidadeProdutos + 1;
     const totalCell = worksheet.getCell(`J${novaLinhaTotal}`);
     totalCell.value = total;
-    totalCell.numFmt = 'R$ #,##0.00';
+    totalCell.numFmt = '_-"R$" * #,##0.00_-;-"R$" * #,##0.00_-;_-"R$" * "-"??_-;_-@_-';
   }
 
   /**
