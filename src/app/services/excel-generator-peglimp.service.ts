@@ -72,6 +72,8 @@ export class ExcelGeneratorPegLimpService {
       const formaPagCell = worksheet.getCell(formaPagAddress);
       const paymentMethodText = quote.paymentMethod ?? '';
 
+      // Limpar célula antes de atribuir novo valor
+      formaPagCell.value = null;
       formaPagCell.value = `FORMA DE PAG.: ${paymentMethodText}`;
       formaPagCell.alignment = {
         wrapText: true,
@@ -86,6 +88,8 @@ export class ExcelGeneratorPegLimpService {
       const prazoCell = worksheet.getCell(prazoAddress);
       const deliveryTimeText = quote.deliveryTime ?? '';
 
+      // Limpar célula antes de atribuir novo valor
+      prazoCell.value = null;
       prazoCell.value = `PRAZO DE ENTREGA: ${deliveryTimeText}`;
       prazoCell.alignment = {
         wrapText: true,
