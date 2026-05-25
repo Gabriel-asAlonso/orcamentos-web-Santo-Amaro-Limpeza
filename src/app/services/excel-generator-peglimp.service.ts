@@ -36,6 +36,14 @@ export class ExcelGeneratorPegLimpService {
     const quoteDate = quote.date ? new Date(quote.date) : new Date();
     const customer = quote.customerData;
 
+    // DEBUG: imprime os campos que o Peg Limp usa
+    console.log('[Peg Limp] Customer recebido:', {
+      client: customer?.client,
+      document: customer?.document,
+      address: customer?.address,
+      contact: customer?.contact
+    });
+
     // ===== DATA DO ORÇAMENTO =====
     // E6 = "DATA: " (rótulo) | F6 = data
     const dia = String(quoteDate.getDate()).padStart(2, '0');
@@ -62,45 +70,36 @@ export class ExcelGeneratorPegLimpService {
       }
     }
 
-    // ===== CONDIÇÕES COMERCIAIS =====
-    // Procurar dinamicamente pelos campos no template
-    const formaPagAddress = this.findCellContaining(worksheet, 'forma de pag');
-    const prazoAddress = this.findCellContaining(worksheet, 'prazo');
+    // ===== CONDIÇÕES COMERCIAIS (linha 70) =====
+    // B70 - rótulo + valor "FORMA DE PAG.: <valor>"
+    const formaPagCell = worksheet.getCell('B70');
+    const formaPagFont = { bold: true, size: formaPagCell.font?.size || 10 };
+    formaPagCell.value = {
+      richText: [
+        { text: 'FORMA DE PAG.:  ', font: formaPagFont },
+        { text: `${quote.paymentMethod ?? ''}`, font: { bold: false, size: formaPagCell.font?.size || 10 } }
+      ]
+    };
+    formaPagCell.alignment = {
+      wrapText: true,
+      vertical: 'middle',
+      horizontal: 'left'
+    };
 
-    // Limpar qualquer ocorrência extra de "PRAZO DE ENTREGA" no template (exceto a que vamos preencher)
-    this.clearExtraOccurrences(worksheet, 'prazo de entrega', prazoAddress);
-
-    // FORMA DE PAG (suporta células mescladas)
-    if (formaPagAddress) {
-      const formaPagCell = worksheet.getCell(formaPagAddress);
-      const paymentMethodText = quote.paymentMethod ?? '';
-
-      // Limpar célula e sua formatação
-      formaPagCell.value = null;
-      formaPagCell.font = { bold: false, size: 10 };
-      formaPagCell.value = `FORMA DE PAG.: ${paymentMethodText}`;
-      formaPagCell.alignment = {
-        wrapText: true,
-        vertical: 'top',
-        horizontal: 'left'
-      };
-    }
-
-    // PRAZO DE ENTREGA (suporta células mescladas)
-    if (prazoAddress) {
-      const prazoCell = worksheet.getCell(prazoAddress);
-      const deliveryTimeText = quote.deliveryTime ?? '';
-
-      // Limpar célula e sua formatação
-      prazoCell.value = null;
-      prazoCell.font = { bold: false, size: 10 };
-      prazoCell.value = `PRAZO DE ENTREGA: ${deliveryTimeText}`;
-      prazoCell.alignment = {
-        wrapText: true,
-        vertical: 'top',
-        horizontal: 'left'
-      };
-    }
+    // E70 - rótulo + valor "PRAZO DE ENTREGA: <valor>"
+    const prazoCell = worksheet.getCell('E70');
+    const prazoFont = { bold: true, size: prazoCell.font?.size || 10 };
+    prazoCell.value = {
+      richText: [
+        { text: 'PRAZO DE ENTREGA:  ', font: prazoFont },
+        { text: `${quote.deliveryTime ?? ''}`, font: { bold: false, size: prazoCell.font?.size || 10 } }
+      ]
+    };
+    prazoCell.alignment = {
+      wrapText: true,
+      vertical: 'middle',
+      horizontal: 'left'
+    };
 
     // ===== PRODUTOS =====
     this.fillProducts(worksheet, quote.items);
@@ -212,71 +211,6 @@ export class ExcelGeneratorPegLimpService {
     totalCell.numFmt = accountingFmt;
   }
 
-  private findCellContaining(worksheet: ExcelJS.Worksheet, searchText: string): string | undefined {
-    const target = searchText.toLowerCase();
-    const merges = (worksheet as any).model?.merges || [];
-
-    for (let row = 1; row <= Math.min(worksheet.rowCount, 100); row++) {
-      for (let col = 1; col <= 16; col++) {
-        const cell = worksheet.getCell(row, col);
-        let cellText = '';
-
-        if (typeof cell.value === 'string') {
-          cellText = cell.value;
-        } else if (cell.value && typeof cell.value === 'object' && (cell.value as any).richText) {
-          cellText = (cell.value as any).richText.map((x: any) => x.text).join('');
-        }
-
-        if (cellText.toLowerCase().includes(target)) {
-          // Se a célula está em um merged range, retornar apenas a master cell (primeira do range)
-          const mergedRange = this.findMergedRange(merges, row, col);
-          if (mergedRange) {
-            return mergedRange.split(':')[0]; // Retorna apenas a primeira célula (master)
-          }
-          return cell.address;
-        }
-      }
-    }
-    return undefined;
-  }
-
-  private findMergedRange(merges: string[], row: number, col: number): string | undefined {
-    const colLetter = String.fromCharCode(64 + col);
-    const cellAddress = `${colLetter}${row}`;
-
-    // Procura se essa célula está dentro de algum merged range
-    for (const merge of merges) {
-      if (this.cellIsInRange(cellAddress, merge)) {
-        return merge;
-      }
-    }
-    return undefined;
-  }
-
-  private cellIsInRange(cell: string, range: string): boolean {
-    const [start, end] = range.split(':');
-    if (!end) return cell === start;
-
-    const cellNum = this.cellToNumber(cell);
-    const startNum = this.cellToNumber(start);
-    const endNum = this.cellToNumber(end);
-
-    return cellNum >= startNum && cellNum <= endNum;
-  }
-
-  private cellToNumber(cell: string): number {
-    const match = cell.match(/([A-Z]+)(\d+)/);
-    if (!match) return 0;
-
-    const [, col, row] = match;
-    let colNum = 0;
-    for (let i = 0; i < col.length; i++) {
-      colNum = colNum * 26 + (col.charCodeAt(i) - 64);
-    }
-
-    return colNum * 100000 + parseInt(row);
-  }
-
   /**
    * Encontra a primeira linha entre fromRow e toRow que contém o texto
    * marker (case-insensitive). Retorna undefined se não encontrar.
@@ -374,34 +308,6 @@ export class ExcelGeneratorPegLimpService {
       const row = worksheet.getRow(rowNumber);
       (row as any).outlineLevel = 0;
       row.hidden = false;
-    }
-  }
-
-  private clearExtraOccurrences(worksheet: ExcelJS.Worksheet, searchText: string, excludeAddress?: string): void {
-    const target = searchText.toLowerCase();
-
-    for (let row = 1; row <= Math.min(worksheet.rowCount, 100); row++) {
-      for (let col = 1; col <= 16; col++) {
-        const cell = worksheet.getCell(row, col);
-        const cellAddress = cell.address;
-
-        // Pular a célula que estamos preenchendo
-        if (excludeAddress && cellAddress === excludeAddress) {
-          continue;
-        }
-
-        let cellText = '';
-        if (typeof cell.value === 'string') {
-          cellText = cell.value;
-        } else if (cell.value && typeof cell.value === 'object' && (cell.value as any).richText) {
-          cellText = (cell.value as any).richText.map((x: any) => x.text).join('');
-        }
-
-        // Se encontra o texto, limpar a célula
-        if (cellText.toLowerCase().includes(target)) {
-          cell.value = null;
-        }
-      }
     }
   }
 }
