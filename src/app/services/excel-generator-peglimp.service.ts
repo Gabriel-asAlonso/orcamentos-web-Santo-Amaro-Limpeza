@@ -214,6 +214,14 @@ export class ExcelGeneratorPegLimpService {
     const totalCell = worksheet.getCell(`F${novaLinhaSubTotal + 3}`);
     totalCell.value = total;
     totalCell.numFmt = accountingFmt;
+
+    // ===== DELETAR LINHAS VAZIAS APÓS O TOTAL =====
+    // Após o TOTAL, deletar todas as linhas até o final para evitar páginas em branco no PDF
+    const lastContentRow = novaLinhaSubTotal + 4; // TOTAL está em novaLinhaSubTotal + 3
+    const totalRows = worksheet.rowCount;
+    if (totalRows > lastContentRow) {
+      worksheet.spliceRows(lastContentRow + 1, totalRows - lastContentRow);
+    }
   }
 
   /**
