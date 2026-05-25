@@ -79,11 +79,12 @@ export class ExcelGeneratorPegLimpService {
     worksheet.getCell('D31').value = null;
 
     // ===== AJUSTE DE BORDA FALTANTE =====
-    // A célula A12 está sem a borda esquerda no template; aplica thin preservando as outras
+    // A célula A12 está sem a borda esquerda no template; aplica medium para
+    // ficar consistente com a espessura das bordas vizinhas
     const a12 = worksheet.getCell('A12');
     a12.border = {
       ...(a12.border ?? {}),
-      left: { style: 'thin', color: { argb: 'FF000000' } }
+      left: { style: 'medium', color: { argb: 'FF000000' } }
     };
 
     // ===== PRODUTOS =====
