@@ -91,21 +91,35 @@ export class ExcelGeneratorPegLimpService {
 
   private fillProducts(worksheet: ExcelJS.Worksheet, items: QuoteItem[]) {
     const linhaInicial = 14;  // Primeira linha de produto
-    const linhaModeloTotais = 26; // Linha onde SUB-TOTAL começa (será movida se necessário)
-
     const quantidadeProdutos = items.length;
     const linhasDisponíveis = 12; // Template tem 12 linhas de produto (14-25)
     const linhasParaAdicionar = Math.max(quantidadeProdutos - linhasDisponíveis, 0);
 
+    // Capturar estilos das linhas de referência ANTES de inserir linhas
+    const estilosReferencia = [];
+    for (let col = 1; col <= 5; col++) {
+      estilosReferencia[col] = this.snapshotStyle(worksheet.getRow(linhaInicial).getCell(col));
+    }
+    const alturaProduto = worksheet.getRow(linhaInicial).height ?? 20;
+
     // Se houver mais de 12 produtos, inserir linhas extras ANTES do SUB-TOTAL
+    // e copiar a formatação das linhas existentes
     if (linhasParaAdicionar > 0) {
       // Inserir linhas após linha 25 (antes de onde está o SUB-TOTAL)
       worksheet.spliceRows(26, 0, ...Array(linhasParaAdicionar).fill([]));
-    }
 
-    // Capturar estilo da primeira linha de produto para copiar
-    const estiloProduto = this.snapshotStyle(worksheet.getRow(linhaInicial).getCell(1));
-    const alturaProduto = worksheet.getRow(linhaInicial).height ?? 20;
+      // Copiar formatação para as novas linhas
+      for (let i = 0; i < linhasParaAdicionar; i++) {
+        const novaLinha = worksheet.getRow(26 + i);
+        novaLinha.height = alturaProduto;
+
+        // Copiar estilo de cada coluna
+        for (let col = 1; col <= 5; col++) {
+          const cell = novaLinha.getCell(col);
+          this.applyStyle(cell, estilosReferencia[col]);
+        }
+      }
+    }
 
     // Calcular total
     const total = items.reduce((sum, item) => {
@@ -121,8 +135,6 @@ export class ExcelGeneratorPegLimpService {
       const discount = item.discount ?? 0;
       const subtotal = item.quantity * item.unitPrice;
       const totalProduto = subtotal - subtotal * (discount / 100);
-
-      linha.height = alturaProduto;
 
       // Preencher dados: A=Item, B=Qtde, C=Descrição, D=Valor Unit, E=Valor Total
       linha.getCell(1).value = index + 1;                       // A - ITEM
