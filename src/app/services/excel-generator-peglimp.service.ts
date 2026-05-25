@@ -57,7 +57,9 @@ export class ExcelGeneratorPegLimpService {
     // Apenas: NOME (C6), CNPJ (C7), END. (C8), At./Contato (C9)
     if (customer) {
       if (customer.client) {
-        worksheet.getCell('C6').value = String(customer.client).replace(/[\r\n]+/g, ' ').trim();
+        const nomeCell = worksheet.getCell('C6');
+        nomeCell.value = String(customer.client).replace(/[\r\n]+/g, ' ').trim();
+        nomeCell.font = { bold: false };
       }
       if (customer.document) {
         worksheet.getCell('C7').value = String(customer.document).replace(/[\r\n]+/g, ' ').trim();
@@ -181,7 +183,10 @@ export class ExcelGeneratorPegLimpService {
       }
 
       // Preencher dados (B=Item, C=Qtde, D=Descrição, E=Vl Unit, F=Vl Total)
-      linha.getCell(2).value = index + 1;                       // B - ITEM
+      const itemCell = linha.getCell(2);
+      itemCell.value = index + 1;                       // B - ITEM
+      itemCell.font = { bold: false };
+
       linha.getCell(3).value = Math.round(item.quantity ?? 0);  // C - QTDE (sempre inteiro)
       linha.getCell(4).value = item.product ?? '';    // D - DESCRIÇÃO
       linha.getCell(5).value = item.unitPrice;        // E - VALOR UNIT
