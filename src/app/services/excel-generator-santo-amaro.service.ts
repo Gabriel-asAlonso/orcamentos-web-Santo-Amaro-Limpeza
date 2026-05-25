@@ -122,7 +122,7 @@ export class ExcelGeneratorSantoAmaroService {
 
     saveAs(
       new Blob([arquivo]),
-      `${quote.label.replace(/\s+/g, '_')}_${quote.company.name.replace(/\W+/g, '_')}.xlsx`
+      `${quote.label.replace(/\s+/g, '_')}_${this.capitalizeCompanyName(quote.company.name).replace(/\W+/g, '_')}.xlsx`
     );
   }
 
@@ -200,7 +200,7 @@ export class ExcelGeneratorSantoAmaroService {
       // Preencher dados
       // A = Código | B(:L) = Descrição | M = Desc% | N = Qtde | O = Vl.Unit | P = Vl.Total
       linha.getCell(1).value = item.code ?? index + 1;     // A - Código
-      linha.getCell(2).value = item.product ?? '';          // B - Descrição
+      linha.getCell(2).value = this.capitalize(item.product ?? '');          // B - Descrição
       linha.getCell(13).value = discount > 0 ? discount / 100 : 0; // M - Desc %
       linha.getCell(14).value = Math.round(item.quantity ?? 0); // N - Qtde
       linha.getCell(15).value = item.unitPrice;             // O - Vl Unitário
@@ -369,13 +369,13 @@ export class ExcelGeneratorSantoAmaroService {
     worksheet: ExcelJS.Worksheet
   ) {
     try {
-      const logoResponse = await fetch('/logoSantoAmaroLimpeza.png');
+      const logoResponse = await fetch('/logoSantoAmaroLimpeza.jpeg');
       if (!logoResponse.ok) return;
 
       const logoBuffer = await logoResponse.arrayBuffer();
       const logoId = workbook.addImage({
         buffer: logoBuffer,
-        extension: 'png'
+        extension: 'jpeg'
       });
 
       // Ancorar entre O2 e P5 (cobre as células onde estava a "Picture in Cell")
@@ -398,5 +398,18 @@ export class ExcelGeneratorSantoAmaroService {
       (row as any).outlineLevel = 0;
       row.hidden = false;
     }
+  }
+
+  private capitalize(str: string): string {
+    if (!str) return str;
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  }
+
+  private capitalizeCompanyName(str: string): string {
+    if (!str) return str;
+    return str
+      .split(/\s+/)
+      .map(word => this.capitalize(word))
+      .join(' ');
   }
 }
