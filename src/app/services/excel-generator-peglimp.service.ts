@@ -211,6 +211,8 @@ export class ExcelGeneratorPegLimpService {
 
   private findCellContaining(worksheet: ExcelJS.Worksheet, searchText: string): string | undefined {
     const target = searchText.toLowerCase();
+    const merges = (worksheet as any).model?.merges || [];
+
     for (let row = 1; row <= Math.min(worksheet.rowCount, 100); row++) {
       for (let col = 1; col <= 16; col++) {
         const cell = worksheet.getCell(row, col);
@@ -223,11 +225,53 @@ export class ExcelGeneratorPegLimpService {
         }
 
         if (cellText.toLowerCase().includes(target)) {
+          // Se a célula está em um merged range, retornar apenas a master cell (primeira do range)
+          const mergedRange = this.findMergedRange(merges, row, col);
+          if (mergedRange) {
+            return mergedRange.split(':')[0]; // Retorna apenas a primeira célula (master)
+          }
           return cell.address;
         }
       }
     }
     return undefined;
+  }
+
+  private findMergedRange(merges: string[], row: number, col: number): string | undefined {
+    const colLetter = String.fromCharCode(64 + col);
+    const cellAddress = `${colLetter}${row}`;
+
+    // Procura se essa célula está dentro de algum merged range
+    for (const merge of merges) {
+      if (this.cellIsInRange(cellAddress, merge)) {
+        return merge;
+      }
+    }
+    return undefined;
+  }
+
+  private cellIsInRange(cell: string, range: string): boolean {
+    const [start, end] = range.split(':');
+    if (!end) return cell === start;
+
+    const cellNum = this.cellToNumber(cell);
+    const startNum = this.cellToNumber(start);
+    const endNum = this.cellToNumber(end);
+
+    return cellNum >= startNum && cellNum <= endNum;
+  }
+
+  private cellToNumber(cell: string): number {
+    const match = cell.match(/([A-Z]+)(\d+)/);
+    if (!match) return 0;
+
+    const [, col, row] = match;
+    let colNum = 0;
+    for (let i = 0; i < col.length; i++) {
+      colNum = colNum * 26 + (col.charCodeAt(i) - 64);
+    }
+
+    return colNum * 100000 + parseInt(row);
   }
 
   /**
