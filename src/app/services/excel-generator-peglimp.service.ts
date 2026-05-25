@@ -30,6 +30,8 @@ export class ExcelGeneratorPegLimpService {
     this.clearWorksheetRowGrouping(worksheet);
     worksheet.views = [{ showGridLines: false }];
     worksheet.getColumn('B').width = (worksheet.getColumn('B').width ?? 8.43) + 2;
+    // Expandir coluna E para acomodar "PRAZO DE ENTREGA"
+    worksheet.getColumn('E').width = (worksheet.getColumn('E').width ?? 12) + 3;
 
     const quoteDate = quote.date ? new Date(quote.date) : new Date();
     const customer = quote.customerData;
@@ -71,32 +73,32 @@ export class ExcelGeneratorPegLimpService {
     // ===== CONDIÇÕES COMERCIAIS (linha 70) =====
     // B70 - rótulo + valor "FORMA DE PAG.: <valor>"
     const formaPagCell = worksheet.getCell('B70');
-    const formaPagFont = formaPagCell.font || {};
+    const formaPagFont = { bold: true, size: formaPagCell.font?.size || 10 };
     formaPagCell.value = {
       richText: [
-        { text: 'FORMA DE PAG.:  ', font: { ...formaPagFont, bold: true } },
-        { text: `${quote.paymentMethod ?? ''}`, font: { ...formaPagFont, bold: false } }
+        { text: 'FORMA DE PAG.:  ', font: formaPagFont },
+        { text: `${quote.paymentMethod ?? ''}`, font: { bold: false, size: formaPagCell.font?.size || 10 } }
       ]
     };
     formaPagCell.alignment = {
-      ...(formaPagCell.alignment || {}),
       wrapText: true,
-      vertical: 'middle'
+      vertical: 'middle',
+      horizontal: 'left'
     };
 
     // E70 - rótulo + valor "PRAZO DE ENTREGA: <valor>"
     const prazoCell = worksheet.getCell('E70');
-    const prazoFont = prazoCell.font || {};
+    const prazoFont = { bold: true, size: prazoCell.font?.size || 10 };
     prazoCell.value = {
       richText: [
-        { text: 'PRAZO DE ENTREGA:  ', font: { ...prazoFont, bold: true } },
-        { text: `${quote.deliveryTime ?? ''}`, font: { ...prazoFont, bold: false } }
+        { text: 'PRAZO DE ENTREGA:  ', font: prazoFont },
+        { text: `${quote.deliveryTime ?? ''}`, font: { bold: false, size: prazoCell.font?.size || 10 } }
       ]
     };
     prazoCell.alignment = {
-      ...(prazoCell.alignment || {}),
       wrapText: true,
-      vertical: 'middle'
+      vertical: 'middle',
+      horizontal: 'left'
     };
 
     // ===== PRODUTOS =====
