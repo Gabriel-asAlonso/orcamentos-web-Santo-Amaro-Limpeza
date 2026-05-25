@@ -97,18 +97,24 @@ export class ExcelGeneratorPegLimpService {
     // PRAZO DE ENTREGA (suporta células mescladas)
     if (prazoAddress) {
       const prazoCell = worksheet.getCell(prazoAddress);
-      const prazoFont = { bold: true, size: prazoCell.font?.size || 10 };
+      const prazoFont = { bold: true, size: 10 };
+      const deliveryTimeText = quote.deliveryTime ?? '';
+
+      console.log('[Peg Limp] Atualizando prazo em', prazoAddress, 'com valor:', deliveryTimeText);
+
       prazoCell.value = {
         richText: [
           { text: 'PRAZO DE ENTREGA:  ', font: prazoFont },
-          { text: `${quote.deliveryTime ?? ''}`, font: { bold: false, size: prazoCell.font?.size || 10 } }
+          { text: deliveryTimeText, font: { bold: false, size: 10 } }
         ]
       };
       prazoCell.alignment = {
         wrapText: true,
-        vertical: 'middle',
+        vertical: 'top',
         horizontal: 'left'
       };
+
+      console.log('[Peg Limp] Prazo atualizado:', prazoCell.value);
     }
 
     // ===== PRODUTOS =====
