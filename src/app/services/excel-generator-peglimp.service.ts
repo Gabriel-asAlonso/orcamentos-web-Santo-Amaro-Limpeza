@@ -95,28 +95,38 @@ export class ExcelGeneratorPegLimpService {
     const linhasDisponíveis = 12; // Template tem 12 linhas de produto (14-25)
     const linhasParaAdicionar = Math.max(quantidadeProdutos - linhasDisponíveis, 0);
 
-    // Capturar estilos das linhas de referência ANTES de inserir linhas
-    const estilosReferencia = [];
+    // Capturar estilos das DUAS linhas de referência para preservar o padrão zebrado
+    // Row 14 (offset par - tipicamente cinza) e Row 15 (offset ímpar - tipicamente branca)
+    const estiloEven: any[] = [];
+    const estiloOdd: any[] = [];
     for (let col = 1; col <= 5; col++) {
-      estilosReferencia[col] = this.snapshotStyle(worksheet.getRow(linhaInicial).getCell(col));
+      estiloEven[col] = this.snapshotStyle(worksheet.getRow(linhaInicial).getCell(col));
+      estiloOdd[col] = this.snapshotStyle(worksheet.getRow(linhaInicial + 1).getCell(col));
     }
     const alturaProduto = worksheet.getRow(linhaInicial).height ?? 20;
 
     // Se houver mais de 12 produtos, inserir linhas extras ANTES do SUB-TOTAL
-    // e copiar a formatação das linhas existentes
+    // e copiar a formatação ALTERNADA (zebrada) das linhas existentes
     if (linhasParaAdicionar > 0) {
       // Inserir linhas após linha 25 (antes de onde está o SUB-TOTAL)
       worksheet.spliceRows(26, 0, ...Array(linhasParaAdicionar).fill([]));
 
-      // Copiar formatação para as novas linhas
+      // Copiar formatação para as novas linhas, ALTERNANDO entre os dois estilos
       for (let i = 0; i < linhasParaAdicionar; i++) {
-        const novaLinha = worksheet.getRow(26 + i);
+        const linhaAtual = 26 + i;
+        const novaLinha = worksheet.getRow(linhaAtual);
         novaLinha.height = alturaProduto;
+
+        // Determinar offset desde a primeira linha de produto para manter o padrão zebrado
+        // Row 26 = offset 12 (par) → estilo igual ao da row 14
+        // Row 27 = offset 13 (ímpar) → estilo igual ao da row 15
+        const offset = linhaAtual - linhaInicial;
+        const estilos = (offset % 2 === 0) ? estiloEven : estiloOdd;
 
         // Copiar estilo de cada coluna
         for (let col = 1; col <= 5; col++) {
           const cell = novaLinha.getCell(col);
-          this.applyStyle(cell, estilosReferencia[col]);
+          this.applyStyle(cell, estilos[col]);
         }
       }
     }
