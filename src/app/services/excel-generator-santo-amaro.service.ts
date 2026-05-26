@@ -169,9 +169,7 @@ export class ExcelGeneratorSantoAmaroService {
       );
     }
 
-    const linhaTotal = linhaInicial + quantidadeProdutos;
-
-    // Preencher produtos
+    // Preencher produtos (linhas 19 até onde terminar)
     items.forEach((item, index) => {
       const rowNumber = linhaInicial + index;
       const linha = worksheet.getRow(rowNumber);
@@ -188,11 +186,11 @@ export class ExcelGeneratorSantoAmaroService {
         this.applyStyle(cell, estiloProduto[col - 1]);
       }
 
-      // Merge C(:L) para descrição
-      this.safeMerge(worksheet, `C${rowNumber}:L${rowNumber}`);
+      // Merge C:K para descrição (L fica livre para unidade)
+      this.safeMerge(worksheet, `C${rowNumber}:K${rowNumber}`);
 
       // Preencher dados - Layout novo:
-      // A=Código | C(:L)=Descrição | L=Unid | M=Desc% | N=Qtde | O=Vl.Unit | P=Vl.Total
+      // A=Código | C:K(merged)=Descrição | L=Unid | M=Desc% | N=Qtde | O=Vl.Unit | P=Vl.Total
       linha.getCell(1).value = item.code ?? index + 1;              // A - Código
       linha.getCell(3).value = item.product ?? '';                  // C - Descrição
       linha.getCell(12).value = item.unit ?? '';                    // L - Unidade
@@ -202,6 +200,7 @@ export class ExcelGeneratorSantoAmaroService {
       linha.getCell(16).value = totalProduto;                       // P - Vl.Total
 
       // Formatação numérica
+      linha.getCell(1).numFmt = '@';
       linha.getCell(13).numFmt = '0.00%';
       linha.getCell(14).numFmt = '0';
       linha.getCell(15).numFmt = accountingFmt;
@@ -219,16 +218,26 @@ export class ExcelGeneratorSantoAmaroService {
       linha.commit();
     });
 
-    // Atualizar totalizações na coluna O
+    // Limpar linhas de produtos extras (se houver menos itens que o template)
+    const ultimaLinhaTemplate = 41; // Última linha de produtos no template
+    if (linhaInicial + quantidadeProdutos <= ultimaLinhaTemplate) {
+      for (let r = linhaInicial + quantidadeProdutos; r <= ultimaLinhaTemplate; r++) {
+        const row = worksheet.getRow(r);
+        for (let c = 1; c <= 16; c++) {
+          row.getCell(c).value = null;
+        }
+      }
+    }
+
+    // Atualizar totalizações em LINHAS FIXAS do template
     // K43/O43: Total Produtos
-    worksheet.getCell(`O${linhaTotal}`).value = total;
-    worksheet.getCell(`O${linhaTotal}`).numFmt = accountingFmt;
-    worksheet.getCell(`O${linhaTotal}`).font = { bold: true };
+    worksheet.getCell('O43').value = total;
+    worksheet.getCell('O43').numFmt = accountingFmt;
+    worksheet.getCell('O43').font = { bold: true };
 
     // K44/O44: Qtde de Itens
-    const linhaQtdeItens = linhaTotal + 1;
-    worksheet.getCell(`O${linhaQtdeItens}`).value = quantidadeItens;
-    worksheet.getCell(`O${linhaQtdeItens}`).numFmt = '0';
+    worksheet.getCell('O44').value = quantidadeItens;
+    worksheet.getCell('O44').numFmt = '0';
 
     // Zeros em O46 (IPI), O48 (Desconto), O50 (Acréscimo), O52 (Total Subs), O54 (FCP), O56 (Frete)
     const linhasZeros = [46, 48, 50, 52, 54, 56];
@@ -237,7 +246,7 @@ export class ExcelGeneratorSantoAmaroService {
       worksheet.getCell(`O${linha}`).numFmt = accountingFmt;
     });
 
-    // K58/O58: Total Final
+    // K58/O58: Total Final (cópia do total produtos)
     worksheet.getCell('O58').value = total;
     worksheet.getCell('O58').numFmt = accountingFmt;
     worksheet.getCell('O58').font = { bold: true };
