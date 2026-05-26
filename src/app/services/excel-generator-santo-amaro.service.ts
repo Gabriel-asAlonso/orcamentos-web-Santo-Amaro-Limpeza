@@ -8,6 +8,9 @@ import { Quote, QuoteItem } from '../model/orcamento.model';
 })
 export class ExcelGeneratorSantoAmaroService {
   private templatePath = 'assets/templates/cotacao-template-santo-amaro.xlsx';
+  private readonly LINHA_INICIAL_PRODUTOS = 19;
+  private readonly LINHA_TOTAL_PRODUTOS = 43;
+  private readonly ULTIMA_LINHA_TEMPLATE = 41;
 
   async generateQuoteExcel(quote: Quote) {
     const workbook = new ExcelJS.Workbook();
@@ -121,135 +124,89 @@ export class ExcelGeneratorSantoAmaroService {
   }
 
   private fillProducts(worksheet: ExcelJS.Worksheet, items: QuoteItem[]) {
-    const linhaInicial = 19;
-    // Encontra dinamicamente a linha do "Total Produtos:" no template
-    const linhaTotalOriginal =
-      this.findRowContaining(worksheet, 'total produtos', linhaInicial, 200) ?? 43;
-    const quantidadeProdutos = Math.max(items.length, 1);
-    const quantidadeLinhasModelo = Math.max(linhaTotalOriginal - linhaInicial, 1);
-    const linhasParaRemover = Math.max(quantidadeLinhasModelo - quantidadeProdutos, 0);
-    const linhasParaAdicionar = Math.max(quantidadeProdutos - quantidadeLinhasModelo, 0);
-
-    // Capturar estilos da primeira linha de produto (19)
-    const estiloProduto = Array.from({ length: 16 }, (_, c) =>
-      this.snapshotStyle(worksheet.getRow(linhaInicial).getCell(c + 1))
-    );
-    const alturaProduto = worksheet.getRow(linhaInicial).height ?? 16;
-
     const accountingFmt = '_-"R$" * #,##0.00_-;-"R$" * #,##0.00_-;_-"R$" * "-"??_-;_-@_-';
 
-    // Calcular total
+    // Capturar estilos da linha modelo (19)
+    const linhaModelo = worksheet.getRow(this.LINHA_INICIAL_PRODUTOS);
+    const estilosModelo: any = {};
+    for (let col = 1; col <= 16; col++) {
+      estilosModelo[col] = this.snapshotStyle(linhaModelo.getCell(col));
+    }
+    const alturaProduto = linhaModelo.height ?? 18;
+
+    // Cálculos de totais
     const total = items.reduce((sum, item) => {
       const discount = item.discount ?? 0;
       const subtotal = item.quantity * item.unitPrice;
       return sum + (subtotal - subtotal * (discount / 100));
     }, 0);
 
-    // Calcular quantidade total de itens
     const quantidadeItens = items.reduce((sum, item) => sum + (item.quantity ?? 0), 0);
 
-    // Desfazer merges da região
-    this.unmergeFrom(worksheet, linhaInicial);
-
-    // Ajustar quantidade de linhas
-    if (linhasParaAdicionar > 0) {
-      this.spliceRowsInChunks(
-        worksheet,
-        linhaTotalOriginal,
-        0,
-        Array.from({ length: linhasParaAdicionar }, () => [])
-      );
+    // Limpar e preparar linhas de produtos
+    for (let r = this.LINHA_INICIAL_PRODUTOS; r <= this.ULTIMA_LINHA_TEMPLATE; r++) {
+      const row = worksheet.getRow(r);
+      for (let c = 1; c <= 16; c++) {
+        const cell = row.getCell(c);
+        cell.value = null;
+      }
     }
 
-    if (linhasParaRemover > 0) {
-      this.spliceRowsInChunks(
-        worksheet,
-        linhaInicial + quantidadeProdutos,
-        linhasParaRemover
-      );
-    }
-
-    // Preencher produtos (linhas 19 até onde terminar)
+    // Preencher produtos
     items.forEach((item, index) => {
-      const rowNumber = linhaInicial + index;
-      const linha = worksheet.getRow(rowNumber);
+      const rowNumber = this.LINHA_INICIAL_PRODUTOS + index;
+      const row = worksheet.getRow(rowNumber);
       const discount = item.discount ?? 0;
       const subtotal = item.quantity * item.unitPrice;
       const totalProduto = subtotal - subtotal * (discount / 100);
 
-      linha.height = alturaProduto;
+      row.height = alturaProduto;
 
-      // Aplicar estilo capturado
+      // Aplicar estilos do modelo em todas as colunas
       for (let col = 1; col <= 16; col++) {
-        const cell = linha.getCell(col);
-        cell.value = null;
-        this.applyStyle(cell, estiloProduto[col - 1]);
-      }
-
-      // Merge C:K para descrição (L fica livre para unidade)
-      this.safeMerge(worksheet, `C${rowNumber}:K${rowNumber}`);
-
-      // Preencher dados - Layout novo:
-      // A=Código | C:K(merged)=Descrição | L=Unid | M=Desc% | N=Qtde | O=Vl.Unit | P=Vl.Total
-      linha.getCell(1).value = item.code ?? index + 1;              // A - Código
-      linha.getCell(3).value = item.product ?? '';                  // C - Descrição
-      linha.getCell(12).value = item.unit ?? '';                    // L - Unidade
-      linha.getCell(13).value = discount > 0 ? discount / 100 : 0;  // M - Desc %
-      linha.getCell(14).value = Math.round(item.quantity ?? 0);     // N - Qtde
-      linha.getCell(15).value = item.unitPrice;                     // O - Vl.Unit
-      linha.getCell(16).value = totalProduto;                       // P - Vl.Total
-
-      // Formatação numérica
-      linha.getCell(1).numFmt = '@';
-      linha.getCell(13).numFmt = '0.00%';
-      linha.getCell(14).numFmt = '0';
-      linha.getCell(15).numFmt = accountingFmt;
-      linha.getCell(16).numFmt = accountingFmt;
-
-      // Alinhamento
-      linha.getCell(1).alignment = { horizontal: 'center', vertical: 'middle', wrapText: false };
-      linha.getCell(3).alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
-      linha.getCell(12).alignment = { horizontal: 'center', vertical: 'middle', wrapText: false };
-      linha.getCell(13).alignment = { horizontal: 'center', vertical: 'middle', wrapText: false };
-      linha.getCell(14).alignment = { horizontal: 'center', vertical: 'middle', wrapText: false };
-      linha.getCell(15).alignment = { horizontal: 'right', vertical: 'middle', wrapText: false };
-      linha.getCell(16).alignment = { horizontal: 'right', vertical: 'middle', wrapText: false };
-
-      linha.commit();
-    });
-
-    // Limpar linhas de produtos extras (se houver menos itens que o template)
-    const ultimaLinhaTemplate = 41; // Última linha de produtos no template
-    if (linhaInicial + quantidadeProdutos <= ultimaLinhaTemplate) {
-      for (let r = linhaInicial + quantidadeProdutos; r <= ultimaLinhaTemplate; r++) {
-        const row = worksheet.getRow(r);
-        for (let c = 1; c <= 16; c++) {
-          row.getCell(c).value = null;
+        const cell = row.getCell(col);
+        if (estilosModelo[col]) {
+          this.applyStyle(cell, estilosModelo[col]);
         }
       }
-    }
 
-    // Atualizar totalizações em LINHAS FIXAS do template
-    // K43/O43: Total Produtos
-    worksheet.getCell('O43').value = total;
-    worksheet.getCell('O43').numFmt = accountingFmt;
-    worksheet.getCell('O43').font = { bold: true };
+      // Preencher dados conforme template:
+      // A=Código | C=Descrição | L=Unid. | M=Desc% | N=Qtde. | O=Vl.Unit. | P=Vl.Total
+      row.getCell(1).value = item.code ?? index + 1;            // A - Código
+      row.getCell(3).value = item.product ?? '';                // C - Descrição
+      row.getCell(12).value = item.unit ?? '';                  // L - Unidade
+      row.getCell(13).value = discount > 0 ? discount / 100 : 0; // M - Desc %
+      row.getCell(14).value = Math.round(item.quantity ?? 0);   // N - Qtde
+      row.getCell(15).value = item.unitPrice;                   // O - Vl.Unit
+      row.getCell(16).value = totalProduto;                     // P - Vl.Total
 
-    // K44/O44: Qtde de Itens
+      // Formatação numérica
+      row.getCell(13).numFmt = '0.00%';
+      row.getCell(14).numFmt = '0';
+      row.getCell(15).numFmt = accountingFmt;
+      row.getCell(16).numFmt = accountingFmt;
+
+      row.commit();
+    });
+
+    // Atualizar totalizações (linhas fixas)
+    const totalCell = worksheet.getCell(`O${this.LINHA_TOTAL_PRODUTOS}`);
+    totalCell.value = total;
+    totalCell.numFmt = accountingFmt;
+
     worksheet.getCell('O44').value = quantidadeItens;
     worksheet.getCell('O44').numFmt = '0';
 
-    // Zeros em O46 (IPI), O48 (Desconto), O50 (Acréscimo), O52 (Total Subs), O54 (FCP), O56 (Frete)
-    const linhasZeros = [46, 48, 50, 52, 54, 56];
-    linhasZeros.forEach(linha => {
-      worksheet.getCell(`O${linha}`).value = 0;
-      worksheet.getCell(`O${linha}`).numFmt = accountingFmt;
+    // Zeros nos campos de taxas/descontos
+    [46, 48, 50, 52, 54, 56].forEach(row => {
+      const cell = worksheet.getCell(`O${row}`);
+      cell.value = 0;
+      cell.numFmt = accountingFmt;
     });
 
-    // K58/O58: Total Final (cópia do total produtos)
+    // Total final (O58)
     worksheet.getCell('O58').value = total;
     worksheet.getCell('O58').numFmt = accountingFmt;
-    worksheet.getCell('O58').font = { bold: true };
   }
 
   /**
