@@ -36,8 +36,8 @@ export class ExcelGeneratorSantoAmaroService {
     // Limpar células com "#VALUE!" deixadas pelo recurso "Picture in Cell"
     this.clearValueErrors(worksheet);
 
-    // Inserir a logo programaticamente
-    await this.insertCompanyLogo(workbook, worksheet);
+    // A logo já vem embutida no template - não inserir novamente
+    // (evita duplicação da logo no lado direito)
 
     const customer = quote.customerData;
     const quoteDate = quote.date ? new Date(quote.date) : new Date();
@@ -126,14 +126,6 @@ export class ExcelGeneratorSantoAmaroService {
   private fillProducts(worksheet: ExcelJS.Worksheet, items: QuoteItem[]) {
     const accountingFmt = '_-"R$" * #,##0.00_-;-"R$" * #,##0.00_-;_-"R$" * "-"??_-;_-@_-';
 
-    // Capturar estilos da linha modelo (19)
-    const linhaModelo = worksheet.getRow(this.LINHA_INICIAL_PRODUTOS);
-    const estilosModelo: any = {};
-    for (let col = 1; col <= 16; col++) {
-      estilosModelo[col] = this.snapshotStyle(linhaModelo.getCell(col));
-    }
-    const alturaProduto = linhaModelo.height ?? 18;
-
     // Cálculos de totais
     const total = items.reduce((sum, item) => {
       const discount = item.discount ?? 0;
@@ -143,61 +135,53 @@ export class ExcelGeneratorSantoAmaroService {
 
     const quantidadeItens = items.reduce((sum, item) => sum + (item.quantity ?? 0), 0);
 
-    // Limpar e preparar linhas de produtos
+    // IMPORTANTE: Apenas LIMPAR valores das colunas relevantes, sem mexer em
+    // bordas, fills ou outras propriedades. As bordas vêm do template.
+    const colunasProdutos = [1, 3, 12, 13, 14, 15, 16]; // A, C, L, M, N, O, P
     for (let r = this.LINHA_INICIAL_PRODUTOS; r <= this.ULTIMA_LINHA_TEMPLATE; r++) {
       const row = worksheet.getRow(r);
-      for (let c = 1; c <= 16; c++) {
-        const cell = row.getCell(c);
-        cell.value = null;
-      }
+      colunasProdutos.forEach(c => {
+        row.getCell(c).value = null;
+      });
     }
 
-    // Preencher produtos
+    // Preencher produtos - SOMENTE valores, preserva bordas/estilos do template
     items.forEach((item, index) => {
       const rowNumber = this.LINHA_INICIAL_PRODUTOS + index;
+
+      // Se ultrapassar o limite do template, não preencher
+      if (rowNumber > this.ULTIMA_LINHA_TEMPLATE) return;
+
       const row = worksheet.getRow(rowNumber);
       const discount = item.discount ?? 0;
       const subtotal = item.quantity * item.unitPrice;
       const totalProduto = subtotal - subtotal * (discount / 100);
 
-      row.height = alturaProduto;
-
-      // Aplicar estilos do modelo em todas as colunas
-      for (let col = 1; col <= 16; col++) {
-        const cell = row.getCell(col);
-        if (estilosModelo[col]) {
-          this.applyStyle(cell, estilosModelo[col]);
-        }
-      }
-
-      // Preencher dados conforme template:
+      // Preencher dados conforme template (apenas valores):
       // A=Código | C=Descrição | L=Unid. | M=Desc% | N=Qtde. | O=Vl.Unit. | P=Vl.Total
-      row.getCell(1).value = item.code ?? index + 1;            // A - Código
-      row.getCell(3).value = item.product ?? '';                // C - Descrição
-      row.getCell(12).value = item.unit ?? '';                  // L - Unidade
+      row.getCell(1).value = item.code ?? index + 1;             // A - Código
+      row.getCell(3).value = item.product ?? '';                 // C - Descrição
+      row.getCell(12).value = item.unit ?? '';                   // L - Unidade
       row.getCell(13).value = discount > 0 ? discount / 100 : 0; // M - Desc %
-      row.getCell(14).value = Math.round(item.quantity ?? 0);   // N - Qtde
-      row.getCell(15).value = item.unitPrice;                   // O - Vl.Unit
-      row.getCell(16).value = totalProduto;                     // P - Vl.Total
+      row.getCell(14).value = Math.round(item.quantity ?? 0);    // N - Qtde
+      row.getCell(15).value = item.unitPrice;                    // O - Vl.Unit
+      row.getCell(16).value = totalProduto;                      // P - Vl.Total
 
-      // Formatação numérica
+      // Aplicar APENAS formatação numérica (sem alterar bordas)
       row.getCell(13).numFmt = '0.00%';
       row.getCell(14).numFmt = '0';
       row.getCell(15).numFmt = accountingFmt;
       row.getCell(16).numFmt = accountingFmt;
-
-      row.commit();
     });
 
-    // Atualizar totalizações (linhas fixas)
-    const totalCell = worksheet.getCell(`O${this.LINHA_TOTAL_PRODUTOS}`);
-    totalCell.value = total;
-    totalCell.numFmt = accountingFmt;
+    // Atualizar totalizações (linhas fixas) - apenas valores
+    worksheet.getCell(`O${this.LINHA_TOTAL_PRODUTOS}`).value = total;
+    worksheet.getCell(`O${this.LINHA_TOTAL_PRODUTOS}`).numFmt = accountingFmt;
 
     worksheet.getCell('O44').value = quantidadeItens;
     worksheet.getCell('O44').numFmt = '0';
 
-    // Zeros nos campos de taxas/descontos
+    // Zeros nos campos de taxas/descontos (preservando estilos)
     [46, 48, 50, 52, 54, 56].forEach(row => {
       const cell = worksheet.getCell(`O${row}`);
       cell.value = 0;
@@ -327,37 +311,6 @@ export class ExcelGeneratorSantoAmaroService {
           cell.value = null;
         }
       }
-    }
-  }
-
-  /**
-   * Insere a logo Santo Amaro como imagem flutuante usando twoCellAnchor.
-   * Substitui a "Picture in Cell" do template que não é compatível com ExcelJS.
-   */
-  private async insertCompanyLogo(
-    workbook: ExcelJS.Workbook,
-    worksheet: ExcelJS.Worksheet
-  ) {
-    try {
-      const logoResponse = await fetch('/logoSantoAmaroLimpeza.jpeg');
-      if (!logoResponse.ok) {
-        console.warn('[Santo Amaro] Logo não encontrada:', logoResponse.status, logoResponse.statusText);
-        return;
-      }
-
-      const logoBuffer = await logoResponse.arrayBuffer();
-      const logoId = workbook.addImage({
-        buffer: logoBuffer,
-        extension: 'jpeg'
-      });
-
-      worksheet.addImage(logoId, {
-        tl: { col: 14, row: 1 } as any,
-        br: { col: 16, row: 5 } as any
-      });
-      console.log('[Santo Amaro] Logo inserida com sucesso');
-    } catch (error) {
-      console.error('[Santo Amaro] Erro ao inserir logo:', error);
     }
   }
 
