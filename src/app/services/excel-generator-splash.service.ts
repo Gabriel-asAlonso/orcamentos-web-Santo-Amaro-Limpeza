@@ -46,11 +46,11 @@ export class ExcelGeneratorSplashService {
     });
 
     // ===== DATA DO ORÇAMENTO =====
-    // F6 contém a data (E6 tem o rótulo "DATA:" do template)
+    // F9 contém a data (E9 tem o rótulo "DATA:" do template)
     const dia = String(quoteDate.getDate()).padStart(2, '0');
     const mes = String(quoteDate.getMonth() + 1).padStart(2, '0');
     const ano = quoteDate.getFullYear();
-    const dataCell = worksheet.getCell('F6');
+    const dataCell = worksheet.getCell('F9');
     dataCell.numFmt = '@';
     dataCell.value = `${dia}/${mes}/${ano}`;
 
@@ -60,24 +60,24 @@ export class ExcelGeneratorSplashService {
     // ter dados de exemplo ou ficar vazio se o template foi limpo).
     if (customer) {
       if (customer.client) {
-        const b6 = worksheet.getCell('B6');
+        const b9 = worksheet.getCell('B9');
         // Limpa caracteres de quebra de linha (\r, \n) que podem
         // vir no nome importado e causar quebra visual
-        b6.value = String(customer.client).replace(/[\r\n]+/g, ' ').trim();
-        b6.alignment = {
-          ...(b6.alignment || {}),
+        b9.value = String(customer.client).replace(/[\r\n]+/g, ' ').trim();
+        b9.alignment = {
+          ...(b9.alignment || {}),
           wrapText: false,
           vertical: 'middle'
         };
       }
       if (customer.document) {
-        worksheet.getCell('B7').value = String(customer.document).replace(/[\r\n]+/g, ' ').trim();
+        worksheet.getCell('B10').value = String(customer.document).replace(/[\r\n]+/g, ' ').trim();
       }
       if (customer.address) {
-        const b8 = worksheet.getCell('B8');
-        b8.value = String(customer.address).replace(/[\r\n]+/g, ' ').trim();
-        b8.alignment = {
-          ...(b8.alignment || {}),
+        const b11 = worksheet.getCell('B11');
+        b11.value = String(customer.address).replace(/[\r\n]+/g, ' ').trim();
+        b11.alignment = {
+          ...(b11.alignment || {}),
           wrapText: false,
           vertical: 'middle'
         };
@@ -85,14 +85,14 @@ export class ExcelGeneratorSplashService {
     }
 
     // Garantir altura adequada para as linhas do cliente
-    worksheet.getRow(6).height = 18;
-    worksheet.getRow(7).height = 16;
-    worksheet.getRow(8).height = 16;
-    worksheet.getRow(9).height = 16;
+    worksheet.getRow(9).height = 18;
+    worksheet.getRow(10).height = 16;
+    worksheet.getRow(11).height = 16;
+    worksheet.getRow(12).height = 16;
 
     // ===== CONDIÇÕES COMERCIAIS =====
-    // A11:D11 mergido - rótulo em negrito + valor sem negrito (rich text)
-    const formaPagCell = worksheet.getCell('A11');
+    // A14:D14 mergido - rótulo em negrito + valor sem negrito (rich text)
+    const formaPagCell = worksheet.getCell('A14');
     const formaPagFont = formaPagCell.font || {};
     formaPagCell.value = {
       richText: [
@@ -106,8 +106,8 @@ export class ExcelGeneratorSplashService {
       vertical: 'middle'
     };
 
-    // E11:F11 mergido - rótulo em negrito + valor sem negrito (rich text)
-    const prazoCell = worksheet.getCell('E11');
+    // E14:F14 mergido - rótulo em negrito + valor sem negrito (rich text)
+    const prazoCell = worksheet.getCell('E14');
     const prazoFont = prazoCell.font || {};
     prazoCell.value = {
       richText: [
@@ -122,7 +122,7 @@ export class ExcelGeneratorSplashService {
     };
 
     // Permitir altura automática para o texto quebrar
-    worksheet.getRow(11).height = 40;
+    worksheet.getRow(14).height = 40;
 
     // ===== PRODUTOS =====
     this.fillProducts(worksheet, quote.items);
@@ -136,21 +136,21 @@ export class ExcelGeneratorSplashService {
   }
 
   private fillProducts(worksheet: ExcelJS.Worksheet, items: QuoteItem[]) {
-    const linhaInicial = 15;
+    const linhaInicial = 17;
     // Encontra dinamicamente onde está o TOTAL no template (procura "Total Geral")
-    const linhaTotalOriginal = this.findRowContaining(worksheet, 'total geral', linhaInicial, 100) ?? 55;
+    const linhaTotalOriginal = this.findRowContaining(worksheet, 'total geral', linhaInicial, 100) ?? 57;
     const quantidadeProdutos = Math.max(items.length, 1);
     const quantidadeLinhasModelo = Math.max(linhaTotalOriginal - linhaInicial, 1);
     const linhasParaRemover = Math.max(quantidadeLinhasModelo - quantidadeProdutos, 0);
     const linhasParaAdicionar = Math.max(quantidadeProdutos - quantidadeLinhasModelo, 0);
 
-    // Capturar estilos da primeira linha de produto (15)
+    // Capturar estilos da primeira linha de produto (17)
     const estiloProduto = Array.from({ length: 6 }, (_, i) =>
       this.snapshotStyle(worksheet.getRow(linhaInicial).getCell(i + 1))
     );
     const alturaProduto = worksheet.getRow(linhaInicial).height ?? 16;
 
-    // Capturar estilos do total (linha 55)
+    // Capturar estilos do total (linha 57)
     const estiloTotalLabel = this.snapshotStyle(worksheet.getCell(`A${linhaTotalOriginal}`));
     const estiloTotalValor = this.snapshotStyle(worksheet.getCell(`F${linhaTotalOriginal}`));
 
@@ -354,11 +354,11 @@ export class ExcelGeneratorSplashService {
     (worksheet as any).rowOutlineLevel = 0;
 
     // Limpar agrupamento apenas das linhas da tabela de produtos pra baixo
-    // (linhas 1-13 do cabeçalho não precisam ser tocadas, evitando
+    // (linhas 1-16 do cabeçalho não precisam ser tocadas, evitando
     // qualquer interferência com conteúdo da empresa em D1:F4)
     const actualRowCount = (worksheet as any).actualRowCount ?? worksheet.rowCount;
     const ultimaLinha = Math.min(Math.max(actualRowCount, 60), 200);
-    for (let rowNumber = 14; rowNumber <= ultimaLinha; rowNumber++) {
+    for (let rowNumber = 17; rowNumber <= ultimaLinha; rowNumber++) {
       const row = worksheet.getRow(rowNumber);
       (row as any).outlineLevel = 0;
       row.hidden = false;
