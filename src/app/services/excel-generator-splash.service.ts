@@ -136,21 +136,25 @@ export class ExcelGeneratorSplashService {
   }
 
   private fillProducts(worksheet: ExcelJS.Worksheet, items: QuoteItem[]) {
-    const linhaInicial = 17;
+    // IMPORTANTE: estrutura do template Splash:
+    // - Linha 17 = CABEÇALHO (ITEM, QUANT, UNID., DESCRIÇÃO, VALOR UNIT, VALOR TOTAL)
+    // - Linha 18 = primeira linha de produto
+    // - Linha 39 = Total Geral
+    const linhaInicial = 18;
     // Encontra dinamicamente onde está o TOTAL no template (procura "Total Geral")
-    const linhaTotalOriginal = this.findRowContaining(worksheet, 'total geral', linhaInicial, 100) ?? 57;
+    const linhaTotalOriginal = this.findRowContaining(worksheet, 'total geral', linhaInicial, 100) ?? 39;
     const quantidadeProdutos = Math.max(items.length, 1);
     const quantidadeLinhasModelo = Math.max(linhaTotalOriginal - linhaInicial, 1);
     const linhasParaRemover = Math.max(quantidadeLinhasModelo - quantidadeProdutos, 0);
     const linhasParaAdicionar = Math.max(quantidadeProdutos - quantidadeLinhasModelo, 0);
 
-    // Capturar estilos da primeira linha de produto (17)
+    // Capturar estilos da primeira linha de produto (linha 18, modelo do template)
     const estiloProduto = Array.from({ length: 6 }, (_, i) =>
       this.snapshotStyle(worksheet.getRow(linhaInicial).getCell(i + 1))
     );
     const alturaProduto = worksheet.getRow(linhaInicial).height ?? 16;
 
-    // Capturar estilos do total (linha 57)
+    // Capturar estilos do total (linha 39 no template original)
     const estiloTotalLabel = this.snapshotStyle(worksheet.getCell(`A${linhaTotalOriginal}`));
     const estiloTotalValor = this.snapshotStyle(worksheet.getCell(`F${linhaTotalOriginal}`));
 
