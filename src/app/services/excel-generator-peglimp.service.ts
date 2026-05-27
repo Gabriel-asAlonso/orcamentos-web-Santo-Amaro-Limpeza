@@ -58,6 +58,16 @@ export class ExcelGeneratorPegLimpService {
 
     // ===== DADOS DO CLIENTE =====
     // Novo layout: NOME (B6), CNPJ (B7), END. (B8), At./Contato (B9)
+    //
+    // IMPORTANTE: o template traz dados de exemplo preenchidos (CONDOMINIO
+    // COTES DU RHONE, 05.127.515/0001-70, AV VEREADOR ABEL FERREIRA, ROGERIO).
+    // Limpar TODAS as células antes para não deixar dados do template "vazarem"
+    // quando algum campo do customer vier vazio/undefined.
+    const camposCliente = ['B6', 'B7', 'B8', 'B9'];
+    camposCliente.forEach(ref => {
+      worksheet.getCell(ref).value = null;
+    });
+
     if (customer) {
       if (customer.client) {
         worksheet.getCell('B6').value = String(customer.client).replace(/[\r\n]+/g, ' ').trim();

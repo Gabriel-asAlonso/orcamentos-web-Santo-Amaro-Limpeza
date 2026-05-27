@@ -47,6 +47,16 @@ export class ExcelGeneratorGrapaCleanService {
 
     // ===== DADOS DO CLIENTE =====
     // NOME (C7), CNPJ (C8:F8), END. (C9), CONTATO (C10), EMAIL (G9), TELEFONE (G10)
+    //
+    // IMPORTANTE: o template traz dados de exemplo preenchidos (CONDOMINIO
+    // COTES DU RHONE, ROGÉRIO ORTIZ, rogerio.ortiz68@gmail.com etc).
+    // Limpar TODAS as células antes para não deixar dados do template "vazarem"
+    // quando algum campo do customer vier vazio/undefined.
+    const camposCliente = ['C7', 'C8', 'C9', 'C10', 'G9', 'G10'];
+    camposCliente.forEach(ref => {
+      worksheet.getCell(ref).value = null;
+    });
+
     if (customer) {
       if (customer.client) {
         worksheet.getCell('C7').value = String(customer.client).replace(/[\r\n]+/g, ' ').trim();
