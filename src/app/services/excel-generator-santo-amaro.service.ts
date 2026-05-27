@@ -86,15 +86,29 @@ export class ExcelGeneratorSantoAmaroService {
     //   D14 = Contato       (era C14)
     //   D15 = Email         (era C15)
     //   D16 = Vendedor      (era C16)
+    //
+    // IMPORTANTE: o template traz dados de exemplo preenchidos (CONDOMINIO
+    // COTES DU RHONE, MIRIAM etc). Limpar TODAS as células antes para não
+    // deixar dados do template "vazarem" quando algum campo do customer vier
+    // vazio/undefined.
+    const camposCliente = ['D7', 'D8', 'D9', 'M9', 'D10', 'L10', 'N10', 'D11', 'D14', 'D15', 'D16'];
+    camposCliente.forEach(ref => {
+      worksheet.getCell(ref).value = null;
+    });
+
     if (customer) {
-      if (customer.client) {
-        worksheet.getCell('D7').value = String(customer.client).replace(/[\r\n]+/g, ' ').trim();
+      const cliente = customer.client ? String(customer.client).replace(/[\r\n]+/g, ' ').trim() : '';
+      if (cliente) {
+        worksheet.getCell('D7').value = cliente;
       }
-      if (customer.fantasyName) {
-        worksheet.getCell('D8').value = String(customer.fantasyName).replace(/[\r\n]+/g, ' ').trim();
-      } else if (customer.client) {
-        worksheet.getCell('D8').value = String(customer.client).replace(/[\r\n]+/g, ' ').trim();
+
+      const fantasia = customer.fantasyName
+        ? String(customer.fantasyName).replace(/[\r\n]+/g, ' ').trim()
+        : cliente; // fallback para o próprio nome do cliente
+      if (fantasia) {
+        worksheet.getCell('D8').value = fantasia;
       }
+
       if (customer.address) {
         worksheet.getCell('D9').value = String(customer.address).replace(/[\r\n]+/g, ' ').trim();
       }
@@ -125,6 +139,11 @@ export class ExcelGeneratorSantoAmaroService {
     }
 
     // ===== CONDIÇÕES COMERCIAIS =====
+    // Limpar antes de preencher para não deixar dados do template visíveis
+    // (template tem "BOLETO 28/35 DD" em M12 e "ENTREGA: ATÉ 03 DIAS..." em D61).
+    worksheet.getCell('M12').value = null;
+    worksheet.getCell('D61').value = null;
+
     // Forma de Pagamento (M12 - era N12)
     if (quote.paymentMethod) {
       worksheet.getCell('M12').value = quote.paymentMethod;
