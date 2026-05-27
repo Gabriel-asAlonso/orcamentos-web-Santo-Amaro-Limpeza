@@ -11,6 +11,9 @@ export class ExcelGeneratorSantoAmaroService {
   private readonly LINHA_INICIAL_PRODUTOS = 19;
   private readonly LINHA_TOTAL_PRODUTOS = 43;
   private readonly ULTIMA_LINHA_TEMPLATE = 41;
+  // O template tem ~1000 linhas vazias com altura definida que viram páginas
+  // fantasmas no PDF. A última linha com conteúdo útil é a 60.
+  private readonly ULTIMA_LINHA_CONTEUDO = 60;
 
   async generateQuoteExcel(quote: Quote) {
     const workbook = new ExcelJS.Workbook();
@@ -35,6 +38,12 @@ export class ExcelGeneratorSantoAmaroService {
 
     // Limpar células com "#VALUE!" deixadas pelo recurso "Picture in Cell"
     this.clearValueErrors(worksheet);
+
+    // Remover linhas fantasmas (61-1000) que viram páginas extras no PDF
+    this.removePhantomRows(worksheet);
+
+    // Definir área de impressão para garantir que o PDF não tenha páginas vazias
+    this.setPrintArea(worksheet);
 
     // A logo já vem embutida no template - não inserir novamente
     // (evita duplicação da logo no lado direito)
@@ -324,6 +333,50 @@ export class ExcelGeneratorSantoAmaroService {
       (row as any).outlineLevel = 0;
       row.hidden = false;
     }
+  }
+
+  /**
+   * Remove "linhas fantasmas" do template - linhas vazias após
+   * ULTIMA_LINHA_CONTEUDO que têm altura definida e fazem o PDF
+   * gerar páginas em branco extras.
+   *
+   * No template original existem ~1000 linhas vazias com altura customHeight,
+   * que somadas dão várias páginas extras no PDF.
+   */
+  private removePhantomRows(worksheet: ExcelJS.Worksheet) {
+    const actualRowCount = (worksheet as any).actualRowCount ?? worksheet.rowCount;
+    const ultimaLinha = Math.max(actualRowCount, this.ULTIMA_LINHA_CONTEUDO + 1);
+
+    for (let rowNumber = this.ULTIMA_LINHA_CONTEUDO + 1; rowNumber <= ultimaLinha; rowNumber++) {
+      const row = worksheet.getRow(rowNumber);
+      // Limpa valores de todas as colunas (A-P, 16 colunas)
+      for (let c = 1; c <= 16; c++) {
+        const cell = row.getCell(c);
+        cell.value = null;
+        cell.style = {};
+      }
+      // Zera altura para a linha não ocupar espaço na impressão
+      row.height = 0;
+      row.hidden = true;
+      (row as any).outlineLevel = 0;
+    }
+  }
+
+  /**
+   * Define a área de impressão para limitar o PDF apenas ao conteúdo útil,
+   * evitando páginas extras causadas por linhas/colunas fantasmas.
+   * Mantém orientação landscape e ajusta a largura à página (sem comprimir
+   * a altura, para não distorcer as linhas de produto).
+   */
+  private setPrintArea(worksheet: ExcelJS.Worksheet) {
+    worksheet.pageSetup = {
+      ...(worksheet.pageSetup ?? {}),
+      printArea: `A1:P${this.ULTIMA_LINHA_CONTEUDO}`,
+      fitToPage: true,
+      fitToWidth: 1,
+      fitToHeight: 0, // 0 = não limita altura (deixa Excel quebrar páginas naturalmente)
+      orientation: 'landscape'
+    };
   }
 
   private capitalize(str: string): string {
