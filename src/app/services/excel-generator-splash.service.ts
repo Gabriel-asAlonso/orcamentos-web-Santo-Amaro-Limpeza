@@ -137,7 +137,6 @@ export class ExcelGeneratorSplashService {
 
   private fillProducts(worksheet: ExcelJS.Worksheet, items: QuoteItem[]) {
     const linhaInicial = 17;
-    const linhaHeader = 16; // Preservar linha do cabeçalho
     // Encontra dinamicamente onde está o TOTAL no template (procura "Total Geral")
     const linhaTotalOriginal = this.findRowContaining(worksheet, 'total geral', linhaInicial, 100) ?? 57;
     const quantidadeProdutos = Math.max(items.length, 1);
@@ -145,13 +144,11 @@ export class ExcelGeneratorSplashService {
     const linhasParaRemover = Math.max(quantidadeLinhasModelo - quantidadeProdutos, 0);
     const linhasParaAdicionar = Math.max(quantidadeProdutos - quantidadeLinhasModelo, 0);
 
-    // Capturar estilos da segunda linha de produto (18) para garantir consistência
-    // A linha 17 pode ter estilos especiais de modelo, usar a 18 como referência padrão
-    const linhaEstiloReferencia = Math.min(linhaInicial + 1, linhaTotalOriginal - 1);
+    // Capturar estilos da primeira linha de produto (17)
     const estiloProduto = Array.from({ length: 6 }, (_, i) =>
-      this.snapshotStyle(worksheet.getRow(linhaEstiloReferencia).getCell(i + 1))
+      this.snapshotStyle(worksheet.getRow(linhaInicial).getCell(i + 1))
     );
-    const alturaProduto = worksheet.getRow(linhaEstiloReferencia).height ?? 16;
+    const alturaProduto = worksheet.getRow(linhaInicial).height ?? 16;
 
     // Capturar estilos do total (linha 57)
     const estiloTotalLabel = this.snapshotStyle(worksheet.getCell(`A${linhaTotalOriginal}`));
@@ -165,7 +162,6 @@ export class ExcelGeneratorSplashService {
     }, 0);
 
     // Desfazer merges da região dos produtos para baixo
-    // Preservar merges da linha de cabeçalho (linha anterior a linhaInicial)
     this.unmergeFrom(worksheet, linhaInicial);
 
     // Ajustar quantidade de linhas
@@ -334,19 +330,12 @@ export class ExcelGeneratorSplashService {
     const merges: string[] = [...(((worksheet as any).model?.merges as string[]) ?? [])];
 
     for (const range of merges) {
-      const match = /^[A-Z]+(\d+):[A-Z]+(\d+)$/.exec(range);
+      const match = /^[A-Z]+(\d+):[A-Z]+\d+$/.exec(range);
 
-      if (match) {
-        const firstRow = Number(match[1]);
-        const lastRow = Number(match[2]);
-
-        // Desmergar apenas se AMBAS as linhas estão >= startRow
-        // Isso preserva merges que envolvem a linha de cabeçalho (linha anterior)
-        if (firstRow >= startRow && lastRow >= startRow) {
-          try {
-            worksheet.unMergeCells(range);
-          } catch {}
-        }
+      if (match && Number(match[1]) >= startRow) {
+        try {
+          worksheet.unMergeCells(range);
+        } catch {}
       }
     }
   }
