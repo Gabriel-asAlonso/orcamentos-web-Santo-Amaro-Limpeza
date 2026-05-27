@@ -10,10 +10,10 @@ export class ExcelGeneratorSantoAmaroService {
   private templatePath = 'assets/templates/cotacao-template-santo-amaro.xlsx';
   private readonly LINHA_INICIAL_PRODUTOS = 19;
   private readonly LINHA_TOTAL_PRODUTOS = 43;
-  private readonly ULTIMA_LINHA_TEMPLATE = 41;
-  // O template tem ~1000 linhas vazias com altura definida que viram páginas
-  // fantasmas no PDF. A última linha com conteúdo útil é a 60.
-  private readonly ULTIMA_LINHA_CONTEUDO = 60;
+  // Última linha de produto no template (linhas 19-39 = 21 produtos modelo)
+  private readonly ULTIMA_LINHA_TEMPLATE = 39;
+  // A última linha com conteúdo útil é a 61 (linha de Observações).
+  private readonly ULTIMA_LINHA_CONTEUDO = 61;
 
   async generateQuoteExcel(quote: Quote) {
     const workbook = new ExcelJS.Workbook();
@@ -52,16 +52,18 @@ export class ExcelGeneratorSantoAmaroService {
     const quoteDate = quote.date ? new Date(quote.date) : new Date();
 
     // ===== DATA DO ORÇAMENTO =====
+    // E4 = valor da data (D4 é o label "Data:")
     const dia = String(quoteDate.getDate()).padStart(2, '0');
     const mes = String(quoteDate.getMonth() + 1).padStart(2, '0');
     const ano = quoteDate.getFullYear();
-    const dataCell = worksheet.getCell('D4');
+    const dataCell = worksheet.getCell('E4');
     dataCell.numFmt = '@';
     dataCell.value = `${dia}/${mes}/${ano}`;
 
     // ===== NÚMERO DO ORÇAMENTO (Aleatório 2000-3000) =====
+    // J4 = número do orçamento (era K4 no template antigo)
     const numeroOrcamento = Math.floor(Math.random() * 1001) + 2000;
-    worksheet.getCell('K4').value = numeroOrcamento;
+    worksheet.getCell('J4').value = numeroOrcamento;
 
     console.log('[Santo Amaro] Customer recebido:', customer);
     console.log('[Santo Amaro] Quote info:', {
@@ -72,53 +74,65 @@ export class ExcelGeneratorSantoAmaroService {
     });
 
     // ===== DADOS DO CLIENTE =====
+    // Mapeamento do novo template (Modelo Final Sta Limpeza):
+    //   D7  = Cliente       (era C7)
+    //   D8  = Fantasia      (era C8)
+    //   D9  = Endereço      (era C9)
+    //   M9  = Bairro        (era N9)
+    //   D10 = Cidade        (era C10)
+    //   L10 = UF            (era M10)
+    //   N10 = CEP           (era O10)
+    //   D11 = CNPJ/CPF      (era C11)
+    //   D14 = Contato       (era C14)
+    //   D15 = Email         (era C15)
+    //   D16 = Vendedor      (era C16)
     if (customer) {
       if (customer.client) {
-        worksheet.getCell('C7').value = String(customer.client).replace(/[\r\n]+/g, ' ').trim();
+        worksheet.getCell('D7').value = String(customer.client).replace(/[\r\n]+/g, ' ').trim();
       }
       if (customer.fantasyName) {
-        worksheet.getCell('C8').value = String(customer.fantasyName).replace(/[\r\n]+/g, ' ').trim();
+        worksheet.getCell('D8').value = String(customer.fantasyName).replace(/[\r\n]+/g, ' ').trim();
       } else if (customer.client) {
-        worksheet.getCell('C8').value = String(customer.client).replace(/[\r\n]+/g, ' ').trim();
+        worksheet.getCell('D8').value = String(customer.client).replace(/[\r\n]+/g, ' ').trim();
       }
       if (customer.address) {
-        worksheet.getCell('C9').value = String(customer.address).replace(/[\r\n]+/g, ' ').trim();
+        worksheet.getCell('D9').value = String(customer.address).replace(/[\r\n]+/g, ' ').trim();
       }
       if (customer.district) {
-        worksheet.getCell('N9').value = customer.district;
+        worksheet.getCell('M9').value = customer.district;
       }
       if (customer.city) {
-        worksheet.getCell('C10').value = customer.city;
+        worksheet.getCell('D10').value = customer.city;
       }
       if (customer.state) {
-        worksheet.getCell('M10').value = customer.state;
+        worksheet.getCell('L10').value = customer.state;
       }
       if (customer.postalCode) {
-        worksheet.getCell('O10').value = customer.postalCode;
+        worksheet.getCell('N10').value = customer.postalCode;
       }
       if (customer.document) {
-        worksheet.getCell('C11').value = customer.document;
+        worksheet.getCell('D11').value = customer.document;
       }
       if (customer.contact) {
-        worksheet.getCell('C14').value = String(customer.contact).replace(/[\r\n]+/g, ' ').trim();
+        worksheet.getCell('D14').value = String(customer.contact).replace(/[\r\n]+/g, ' ').trim();
       }
       if (customer.email) {
-        worksheet.getCell('C15').value = customer.email;
+        worksheet.getCell('D15').value = customer.email;
       }
       if (customer.salesperson) {
-        worksheet.getCell('C16').value = customer.salesperson;
+        worksheet.getCell('D16').value = customer.salesperson;
       }
     }
 
     // ===== CONDIÇÕES COMERCIAIS =====
-    // Forma de Pagamento (N12)
+    // Forma de Pagamento (M12 - era N12)
     if (quote.paymentMethod) {
-      worksheet.getCell('N12').value = quote.paymentMethod;
+      worksheet.getCell('M12').value = quote.paymentMethod;
     }
 
-    // Prazo de entrega vai para Observações (C60)
+    // Prazo de entrega vai para Observações (D61 - era C60)
     if (quote.deliveryTime) {
-      worksheet.getCell('C60').value = `ENTREGA: ${quote.deliveryTime}`;
+      worksheet.getCell('D61').value = `ENTREGA: ${quote.deliveryTime}`;
     }
 
     // ===== PRODUTOS =====
@@ -146,7 +160,8 @@ export class ExcelGeneratorSantoAmaroService {
 
     // IMPORTANTE: Apenas LIMPAR valores das colunas relevantes, sem mexer em
     // bordas, fills ou outras propriedades. As bordas vêm do template.
-    const colunasProdutos = [1, 3, 12, 13, 14, 15, 16]; // A, C, L, M, N, O, P
+    // Novo template: B=Código, D=Descrição, K=Unid., L=Desc%, M=Qtde, N=Vl.Unit, O=Vl.Total
+    const colunasProdutos = [2, 4, 11, 12, 13, 14, 15]; // B, D, K, L, M, N, O
     for (let r = this.LINHA_INICIAL_PRODUTOS; r <= this.ULTIMA_LINHA_TEMPLATE; r++) {
       const row = worksheet.getRow(r);
       colunasProdutos.forEach(c => {
@@ -166,40 +181,44 @@ export class ExcelGeneratorSantoAmaroService {
       const subtotal = item.quantity * item.unitPrice;
       const totalProduto = subtotal - subtotal * (discount / 100);
 
-      // Preencher dados conforme template (apenas valores):
-      // A=Código | C=Descrição | L=Unid. | M=Desc% | N=Qtde. | O=Vl.Unit. | P=Vl.Total
-      row.getCell(1).value = item.code ?? index + 1;             // A - Código
-      row.getCell(3).value = item.product ?? '';                 // C - Descrição
-      row.getCell(12).value = item.unit ?? '';                   // L - Unidade
-      row.getCell(13).value = discount > 0 ? discount / 100 : 0; // M - Desc %
-      row.getCell(14).value = Math.round(item.quantity ?? 0);    // N - Qtde
-      row.getCell(15).value = item.unitPrice;                    // O - Vl.Unit
-      row.getCell(16).value = totalProduto;                      // P - Vl.Total
+      // Preencher dados conforme NOVO template (apenas valores):
+      // B=Código | D=Descrição | K=Unid. | L=Desc% | M=Qtde. | N=Vl.Unit. | O=Vl.Total
+      row.getCell(2).value = item.code ?? index + 1;             // B - Código
+      row.getCell(4).value = item.product ?? '';                 // D - Descrição
+      row.getCell(11).value = item.unit ?? '';                   // K - Unidade
+      row.getCell(12).value = discount > 0 ? discount / 100 : 0; // L - Desc %
+      row.getCell(13).value = Math.round(item.quantity ?? 0);    // M - Qtde
+      row.getCell(14).value = item.unitPrice;                    // N - Vl.Unit
+      row.getCell(15).value = totalProduto;                      // O - Vl.Total
 
       // Aplicar APENAS formatação numérica (sem alterar bordas)
-      row.getCell(13).numFmt = '0.00%';
-      row.getCell(14).numFmt = '0';
+      row.getCell(12).numFmt = '0.00%';
+      row.getCell(13).numFmt = '0';
+      row.getCell(14).numFmt = accountingFmt;
       row.getCell(15).numFmt = accountingFmt;
-      row.getCell(16).numFmt = accountingFmt;
     });
 
-    // Atualizar totalizações (linhas fixas) - apenas valores
-    worksheet.getCell(`O${this.LINHA_TOTAL_PRODUTOS}`).value = total;
-    worksheet.getCell(`O${this.LINHA_TOTAL_PRODUTOS}`).numFmt = accountingFmt;
+    // ===== TOTALIZAÇÕES (mapeamento do novo template) =====
+    // Total Produtos: N43 (era O43)
+    worksheet.getCell(`N${this.LINHA_TOTAL_PRODUTOS}`).value = total;
+    worksheet.getCell(`N${this.LINHA_TOTAL_PRODUTOS}`).numFmt = accountingFmt;
 
-    worksheet.getCell('O44').value = quantidadeItens;
-    worksheet.getCell('O44').numFmt = '0';
+    // Qtde. de Itens: N45 (era O44)
+    worksheet.getCell('N45').value = quantidadeItens;
+    worksheet.getCell('N45').numFmt = '0';
 
-    // Zeros nos campos de taxas/descontos (preservando estilos)
-    [46, 48, 50, 52, 54, 56].forEach(row => {
-      const cell = worksheet.getCell(`O${row}`);
+    // Zeros nos campos de taxas/descontos no novo template:
+    // IPI=N47, Desconto=N49, Acréscimo=N51, Total Subs Trib=N53,
+    // Total FCP ST=N55, Total Frete=N57
+    [47, 49, 51, 53, 55, 57].forEach(row => {
+      const cell = worksheet.getCell(`N${row}`);
       cell.value = 0;
       cell.numFmt = accountingFmt;
     });
 
-    // Total final (O58)
-    worksheet.getCell('O58').value = total;
-    worksheet.getCell('O58').numFmt = accountingFmt;
+    // Total final: N59 (era O58)
+    worksheet.getCell('N59').value = total;
+    worksheet.getCell('N59').numFmt = accountingFmt;
   }
 
   /**
