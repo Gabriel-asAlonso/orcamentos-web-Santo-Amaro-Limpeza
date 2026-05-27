@@ -8,13 +8,11 @@ import { Quote, QuoteItem } from '../model/orcamento.model';
 })
 export class ExcelGeneratorPegLimpService {
   private templatePath = 'assets/templates/cotacao-template-PegLimp.xlsx';
-  // Configuração da tabela de produtos (sincronizada entre generateQuoteExcel e fillProducts)
+  // Primeira linha da tabela de produtos (logo abaixo do header em linha 13).
+  // A quantidade de linhas de produto, posição do SUB-TOTAL e da linha de
+  // FORMA DE PAG. / PRAZO DE ENTREGA são detectadas dinamicamente pelo
+  // conteúdo do template, para se adaptar ao número real de produtos.
   private readonly LINHA_INICIAL_PRODUTOS = 14;
-  // Template tem 21 linhas de produto (14-34). Linha 35 = SUB-TOTAL,
-  // 36 = DESCONTO, 37 = FRETE, 38 = TOTAL, 40 = FORMA DE PAG. / PRAZO DE ENTREGA.
-  private readonly LINHAS_PRODUTOS_TEMPLATE = 21;
-  // Linha original onde estão os textos de FORMA DE PAG. (A40) e PRAZO DE ENTREGA (E40)
-  private readonly LINHA_CONDICOES_ORIGINAL = 40;
 
   async generateQuoteExcel(quote: Quote) {
     const workbook = new ExcelJS.Workbook();
@@ -92,24 +90,16 @@ export class ExcelGeneratorPegLimpService {
       left: { style: 'medium', color: { argb: 'FF000000' } }
     };
 
-    // ===== PRODUTOS =====
-    // IMPORTANTE: fillProducts pode inserir linhas extras (via spliceRows)
-    // quando há mais de 12 produtos. Isso EMPURRA a linha 31 (condições
-    // comerciais) para baixo. Por isso ela deve ser escrita DEPOIS.
-    this.fillProducts(worksheet, quote.items);
-
-    // ===== CONDIÇÕES COMERCIAIS (linha 31 original, deslocada pelo splice) =====
-    // Calcula deslocamento causado pela inserção de linhas extras de produtos
-    const linhasParaAdicionar = Math.max(quote.items.length - this.LINHAS_PRODUTOS_TEMPLATE, 0);
-    const linhaCondicoes = this.LINHA_CONDICOES_ORIGINAL + linhasParaAdicionar;
-
-    // FORMA DE PAG.: escrever rótulo + valor na coluna A e limpar B para evitar duplicação
-    worksheet.getCell(`A${linhaCondicoes}`).value = `FORMA DE PAG.: ${quote.paymentMethod ?? ''}`.trim();
-    worksheet.getCell(`B${linhaCondicoes}`).value = null;
-
-    // PRAZO DE ENTREGA: escrever rótulo + valor na coluna E e limpar D para evitar duplicação
-    worksheet.getCell(`E${linhaCondicoes}`).value = `PRAZO DE ENTREGA: ${quote.deliveryTime ?? ''}`.trim();
-    worksheet.getCell(`D${linhaCondicoes}`).value = null;
+    // ===== PRODUTOS, TOTAIS E CONDIÇÕES COMERCIAIS =====
+    // fillProducts redimensiona a tabela conforme o número de produtos e
+    // grava SUB-TOTAL, TOTAL e FORMA DE PAG. / PRAZO DE ENTREGA nas linhas
+    // corretas, localizadas dinamicamente pelo conteúdo do template.
+    this.fillProducts(
+      worksheet,
+      quote.items,
+      quote.paymentMethod ?? '',
+      quote.deliveryTime ?? ''
+    );
 
     const arquivo = await workbook.xlsx.writeBuffer();
 
@@ -119,17 +109,36 @@ export class ExcelGeneratorPegLimpService {
     );
   }
 
-  private fillProducts(worksheet: ExcelJS.Worksheet, items: QuoteItem[]) {
+  private fillProducts(
+    worksheet: ExcelJS.Worksheet,
+    items: QuoteItem[],
+    paymentMethod: string,
+    deliveryTime: string
+  ) {
     const accountingFmt = '_-"R$" * #,##0.00_-;-"R$" * #,##0.00_-;_-"R$" * "-"??_-;_-@_-';
-    const linhaInicial = this.LINHA_INICIAL_PRODUTOS;        // 14
-    const quantidadeProdutos = items.length;
-    const linhasDisponíveis = this.LINHAS_PRODUTOS_TEMPLATE; // 21 (linhas 14-34)
-    const linhasParaAdicionar = Math.max(quantidadeProdutos - linhasDisponíveis, 0);
-    // Linha onde está o SUB-TOTAL no template original (= 14 + 21 = 35)
-    const linhaSubTotalOriginal = linhaInicial + linhasDisponíveis;
+    const linhaInicial = this.LINHA_INICIAL_PRODUTOS; // 14
+    const N = items.length;
 
-    // Capturar estilos das DUAS linhas de referência para preservar o padrão zebrado
-    // Row 14 (offset par - tipicamente cinza) e Row 15 (offset ímpar - tipicamente branca)
+    // ===== LOCALIZAÇÃO DINÂMICA DOS MARCADORES =====
+    // Buscamos no template a linha real do SUB-TOTAL e a linha real de
+    // FORMA DE PAG. / PRAZO DE ENTREGA. Isso permite que o template seja
+    // editado livremente (mais ou menos linhas de produto) sem que a
+    // posição desses campos fique fora de lugar.
+    const subTotalRow = this.findRowContaining(worksheet, 'SUB-TOTAL', linhaInicial, 300);
+    const formaPagRow = this.findRowContaining(worksheet, 'FORMA DE PAG', linhaInicial, 300);
+
+    if (!subTotalRow) {
+      throw new Error('Template inválido: linha do SUB-TOTAL não encontrada');
+    }
+    if (!formaPagRow) {
+      throw new Error('Template inválido: linha de FORMA DE PAG. não encontrada');
+    }
+    if (formaPagRow <= subTotalRow) {
+      throw new Error('Template inválido: FORMA DE PAG. deve estar após o SUB-TOTAL');
+    }
+
+    // Capturar estilos das duas primeiras linhas de produto (padrão zebrado)
+    // ANTES de qualquer splice, para reaplicar em linhas novas.
     const estiloEven: any[] = [];
     const estiloOdd: any[] = [];
     for (let col = 1; col <= 5; col++) {
@@ -138,39 +147,40 @@ export class ExcelGeneratorPegLimpService {
     }
     const alturaProduto = worksheet.getRow(linhaInicial).height ?? 20;
 
-    // Se houver mais de 21 produtos, inserir linhas extras ANTES do SUB-TOTAL (linha 35)
-    // copiando a formatação ALTERNADA (zebrada) das linhas existentes.
-    if (linhasParaAdicionar > 0) {
-      worksheet.spliceRows(linhaSubTotalOriginal, 0, ...Array(linhasParaAdicionar).fill([]));
+    // ===== REDIMENSIONAR ÁREA DE PRODUTOS PARA CABER EXATAMENTE N ITENS =====
+    const linhasDisponiveis = subTotalRow - linhaInicial;
+    let deltaRows = 0;
 
-      for (let i = 0; i < linhasParaAdicionar; i++) {
-        const linhaAtual = linhaSubTotalOriginal + i;
+    if (N > linhasDisponiveis) {
+      // Inserir linhas extras imediatamente antes do SUB-TOTAL
+      const toInsert = N - linhasDisponiveis;
+      this.spliceRowsInChunks(worksheet, subTotalRow, 0, Array(toInsert).fill([]));
+
+      for (let i = 0; i < toInsert; i++) {
+        const linhaAtual = subTotalRow + i;
         const novaLinha = worksheet.getRow(linhaAtual);
         novaLinha.height = alturaProduto;
 
-        // Manter o padrão zebrado: offset par = estilo da row 14, ímpar = row 15
         const offset = linhaAtual - linhaInicial;
         const estilos = (offset % 2 === 0) ? estiloEven : estiloOdd;
-
         for (let col = 1; col <= 5; col++) {
-          const cell = novaLinha.getCell(col);
-          this.applyStyle(cell, estilos[col]);
+          this.applyStyle(novaLinha.getCell(col), estilos[col]);
         }
       }
+      deltaRows = toInsert;
+    } else if (N < linhasDisponiveis) {
+      // Remover o excesso de linhas a partir da posição (linhaInicial + N)
+      const toRemove = linhasDisponiveis - N;
+      this.spliceRowsInChunks(worksheet, linhaInicial + N, toRemove);
+      deltaRows = -toRemove;
     }
 
-    // Calcular total
-    const total = items.reduce((sum, item) => {
-      const discount = item.discount ?? 0;
-      const subtotal = item.quantity * item.unitPrice;
-      return sum + (subtotal - subtotal * (discount / 100));
-    }, 0);
+    // Após o splice, SUB-TOTAL e FORMA DE PAG. estão em novas posições
+    const novaLinhaSubTotal = subTotalRow + deltaRows;
+    const novaLinhaCondicoes = formaPagRow + deltaRows;
 
-    // ===== LIMPAR TODAS AS LINHAS DE PRODUTO (preserva bordas/estilos) =====
-    // Necessário porque o template traz produtos exemplo (1-21). Se o usuário
-    // gerar com menos de 21 itens, os exemplos restantes ficam visíveis.
-    const ultimaLinhaProduto = linhaInicial + Math.max(quantidadeProdutos, linhasDisponíveis) - 1;
-    for (let r = linhaInicial; r <= ultimaLinhaProduto; r++) {
+    // ===== LIMPAR LINHAS DE PRODUTO (preserva bordas/estilos) =====
+    for (let r = linhaInicial; r < novaLinhaSubTotal; r++) {
       const row = worksheet.getRow(r);
       for (let c = 1; c <= 5; c++) {
         row.getCell(c).value = null;
@@ -178,14 +188,18 @@ export class ExcelGeneratorPegLimpService {
     }
 
     // ===== PREENCHER PRODUTOS =====
+    const total = items.reduce((sum, item) => {
+      const discount = item.discount ?? 0;
+      const subtotal = item.quantity * item.unitPrice;
+      return sum + (subtotal - subtotal * (discount / 100));
+    }, 0);
+
     items.forEach((item, index) => {
-      const rowNumber = linhaInicial + index;
-      const linha = worksheet.getRow(rowNumber);
+      const linha = worksheet.getRow(linhaInicial + index);
       const discount = item.discount ?? 0;
       const subtotal = item.quantity * item.unitPrice;
       const totalProduto = subtotal - subtotal * (discount / 100);
 
-      // Preencher dados: A=Item, B=Qtde, C=Descrição, D=Valor Unit, E=Valor Total
       linha.getCell(1).value = index + 1;                       // A - ITEM
       linha.getCell(2).value = Math.round(item.quantity ?? 0);  // B - QTDE
       linha.getCell(3).value = item.product ?? '';              // C - DESCRIÇÃO
@@ -200,20 +214,20 @@ export class ExcelGeneratorPegLimpService {
     });
 
     // ===== TOTAIS =====
-    // Quando temos MENOS produtos que o template (M < 21), o SUB-TOTAL fica na
-    // linha 35 original (não sobe). Quando temos MAIS, sobe junto com o splice.
-    const novaLinhaSubTotal = linhaInicial + Math.max(quantidadeProdutos, linhasDisponíveis);
-
     worksheet.getCell(`E${novaLinhaSubTotal}`).value = total;
     worksheet.getCell(`E${novaLinhaSubTotal}`).numFmt = accountingFmt;
-
-    // DESCONTO e FRETE ficam vazios (mantém label e formatação do template)
-    worksheet.getCell(`E${novaLinhaSubTotal + 1}`).value = null;
-    worksheet.getCell(`E${novaLinhaSubTotal + 2}`).value = null;
-
-    // TOTAL final
+    worksheet.getCell(`E${novaLinhaSubTotal + 1}`).value = null; // DESCONTO
+    worksheet.getCell(`E${novaLinhaSubTotal + 2}`).value = null; // FRETE
     worksheet.getCell(`E${novaLinhaSubTotal + 3}`).value = total;
     worksheet.getCell(`E${novaLinhaSubTotal + 3}`).numFmt = accountingFmt;
+
+    // ===== FORMA DE PAG. / PRAZO DE ENTREGA =====
+    worksheet.getCell(`A${novaLinhaCondicoes}`).value =
+      `FORMA DE PAG.: ${paymentMethod}`.trim();
+    worksheet.getCell(`B${novaLinhaCondicoes}`).value = null;
+    worksheet.getCell(`E${novaLinhaCondicoes}`).value =
+      `PRAZO DE ENTREGA: ${deliveryTime}`.trim();
+    worksheet.getCell(`D${novaLinhaCondicoes}`).value = null;
   }
 
   /**
