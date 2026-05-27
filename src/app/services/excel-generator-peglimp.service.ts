@@ -8,6 +8,11 @@ import { Quote, QuoteItem } from '../model/orcamento.model';
 })
 export class ExcelGeneratorPegLimpService {
   private templatePath = 'assets/templates/cotacao-template-PegLimp.xlsx';
+  // Configuração da tabela de produtos (sincronizada entre generateQuoteExcel e fillProducts)
+  private readonly LINHA_INICIAL_PRODUTOS = 14;
+  private readonly LINHAS_PRODUTOS_TEMPLATE = 12; // Template tem 12 linhas de produto (14-25)
+  // Linha original onde estão os textos de FORMA DE PAG. e PRAZO DE ENTREGA no template
+  private readonly LINHA_CONDICOES_ORIGINAL = 31;
 
   async generateQuoteExcel(quote: Quote) {
     const workbook = new ExcelJS.Workbook();
@@ -66,18 +71,6 @@ export class ExcelGeneratorPegLimpService {
       }
     }
 
-    // ===== CONDIÇÕES COMERCIAIS (linha 31) =====
-    // A31 - FORMA DE PAG. (rótulo + valor, célula B31 deve ficar vazia)
-    // E31 - PRAZO DE ENTREGA (rótulo + valor, célula D31 deve ficar vazia)
-
-    // FORMA DE PAG.: escrever rótulo + valor em A31 e limpar B31 para evitar duplicação
-    worksheet.getCell('A31').value = `FORMA DE PAG.: ${quote.paymentMethod ?? ''}`.trim();
-    worksheet.getCell('B31').value = null;
-
-    // PRAZO DE ENTREGA: escrever rótulo + valor em E31 e limpar D31 para evitar duplicação
-    worksheet.getCell('E31').value = `PRAZO DE ENTREGA: ${quote.deliveryTime ?? ''}`.trim();
-    worksheet.getCell('D31').value = null;
-
     // ===== AJUSTE DE BORDA FALTANTE =====
     // A célula A12 está sem a borda esquerda no template; aplica medium para
     // ficar consistente com a espessura das bordas vizinhas
@@ -88,7 +81,23 @@ export class ExcelGeneratorPegLimpService {
     };
 
     // ===== PRODUTOS =====
+    // IMPORTANTE: fillProducts pode inserir linhas extras (via spliceRows)
+    // quando há mais de 12 produtos. Isso EMPURRA a linha 31 (condições
+    // comerciais) para baixo. Por isso ela deve ser escrita DEPOIS.
     this.fillProducts(worksheet, quote.items);
+
+    // ===== CONDIÇÕES COMERCIAIS (linha 31 original, deslocada pelo splice) =====
+    // Calcula deslocamento causado pela inserção de linhas extras de produtos
+    const linhasParaAdicionar = Math.max(quote.items.length - this.LINHAS_PRODUTOS_TEMPLATE, 0);
+    const linhaCondicoes = this.LINHA_CONDICOES_ORIGINAL + linhasParaAdicionar;
+
+    // FORMA DE PAG.: escrever rótulo + valor na coluna A e limpar B para evitar duplicação
+    worksheet.getCell(`A${linhaCondicoes}`).value = `FORMA DE PAG.: ${quote.paymentMethod ?? ''}`.trim();
+    worksheet.getCell(`B${linhaCondicoes}`).value = null;
+
+    // PRAZO DE ENTREGA: escrever rótulo + valor na coluna E e limpar D para evitar duplicação
+    worksheet.getCell(`E${linhaCondicoes}`).value = `PRAZO DE ENTREGA: ${quote.deliveryTime ?? ''}`.trim();
+    worksheet.getCell(`D${linhaCondicoes}`).value = null;
 
     const arquivo = await workbook.xlsx.writeBuffer();
 
@@ -99,9 +108,9 @@ export class ExcelGeneratorPegLimpService {
   }
 
   private fillProducts(worksheet: ExcelJS.Worksheet, items: QuoteItem[]) {
-    const linhaInicial = 14;  // Primeira linha de produto
+    const linhaInicial = this.LINHA_INICIAL_PRODUTOS;
     const quantidadeProdutos = items.length;
-    const linhasDisponíveis = 12; // Template tem 12 linhas de produto (14-25)
+    const linhasDisponíveis = this.LINHAS_PRODUTOS_TEMPLATE;
     const linhasParaAdicionar = Math.max(quantidadeProdutos - linhasDisponíveis, 0);
 
     // Capturar estilos das DUAS linhas de referência para preservar o padrão zebrado
