@@ -10,9 +10,11 @@ export class ExcelGeneratorPegLimpService {
   private templatePath = 'assets/templates/cotacao-template-PegLimp.xlsx';
   // Configuração da tabela de produtos (sincronizada entre generateQuoteExcel e fillProducts)
   private readonly LINHA_INICIAL_PRODUTOS = 14;
-  private readonly LINHAS_PRODUTOS_TEMPLATE = 12; // Template tem 12 linhas de produto (14-25)
-  // Linha original onde estão os textos de FORMA DE PAG. e PRAZO DE ENTREGA no template
-  private readonly LINHA_CONDICOES_ORIGINAL = 31;
+  // Template tem 21 linhas de produto (14-34). Linha 35 = SUB-TOTAL,
+  // 36 = DESCONTO, 37 = FRETE, 38 = TOTAL, 40 = FORMA DE PAG. / PRAZO DE ENTREGA.
+  private readonly LINHAS_PRODUTOS_TEMPLATE = 21;
+  // Linha original onde estão os textos de FORMA DE PAG. (A40) e PRAZO DE ENTREGA (E40)
+  private readonly LINHA_CONDICOES_ORIGINAL = 40;
 
   async generateQuoteExcel(quote: Quote) {
     const workbook = new ExcelJS.Workbook();
@@ -108,10 +110,13 @@ export class ExcelGeneratorPegLimpService {
   }
 
   private fillProducts(worksheet: ExcelJS.Worksheet, items: QuoteItem[]) {
-    const linhaInicial = this.LINHA_INICIAL_PRODUTOS;
+    const accountingFmt = '_-"R$" * #,##0.00_-;-"R$" * #,##0.00_-;_-"R$" * "-"??_-;_-@_-';
+    const linhaInicial = this.LINHA_INICIAL_PRODUTOS;        // 14
     const quantidadeProdutos = items.length;
-    const linhasDisponíveis = this.LINHAS_PRODUTOS_TEMPLATE;
+    const linhasDisponíveis = this.LINHAS_PRODUTOS_TEMPLATE; // 21 (linhas 14-34)
     const linhasParaAdicionar = Math.max(quantidadeProdutos - linhasDisponíveis, 0);
+    // Linha onde está o SUB-TOTAL no template original (= 14 + 21 = 35)
+    const linhaSubTotalOriginal = linhaInicial + linhasDisponíveis;
 
     // Capturar estilos das DUAS linhas de referência para preservar o padrão zebrado
     // Row 14 (offset par - tipicamente cinza) e Row 15 (offset ímpar - tipicamente branca)
@@ -123,25 +128,20 @@ export class ExcelGeneratorPegLimpService {
     }
     const alturaProduto = worksheet.getRow(linhaInicial).height ?? 20;
 
-    // Se houver mais de 12 produtos, inserir linhas extras ANTES do SUB-TOTAL
-    // e copiar a formatação ALTERNADA (zebrada) das linhas existentes
+    // Se houver mais de 21 produtos, inserir linhas extras ANTES do SUB-TOTAL (linha 35)
+    // copiando a formatação ALTERNADA (zebrada) das linhas existentes.
     if (linhasParaAdicionar > 0) {
-      // Inserir linhas após linha 25 (antes de onde está o SUB-TOTAL)
-      worksheet.spliceRows(26, 0, ...Array(linhasParaAdicionar).fill([]));
+      worksheet.spliceRows(linhaSubTotalOriginal, 0, ...Array(linhasParaAdicionar).fill([]));
 
-      // Copiar formatação para as novas linhas, ALTERNANDO entre os dois estilos
       for (let i = 0; i < linhasParaAdicionar; i++) {
-        const linhaAtual = 26 + i;
+        const linhaAtual = linhaSubTotalOriginal + i;
         const novaLinha = worksheet.getRow(linhaAtual);
         novaLinha.height = alturaProduto;
 
-        // Determinar offset desde a primeira linha de produto para manter o padrão zebrado
-        // Row 26 = offset 12 (par) → estilo igual ao da row 14
-        // Row 27 = offset 13 (ímpar) → estilo igual ao da row 15
+        // Manter o padrão zebrado: offset par = estilo da row 14, ímpar = row 15
         const offset = linhaAtual - linhaInicial;
         const estilos = (offset % 2 === 0) ? estiloEven : estiloOdd;
 
-        // Copiar estilo de cada coluna
         for (let col = 1; col <= 5; col++) {
           const cell = novaLinha.getCell(col);
           this.applyStyle(cell, estilos[col]);
@@ -155,6 +155,17 @@ export class ExcelGeneratorPegLimpService {
       const subtotal = item.quantity * item.unitPrice;
       return sum + (subtotal - subtotal * (discount / 100));
     }, 0);
+
+    // ===== LIMPAR TODAS AS LINHAS DE PRODUTO (preserva bordas/estilos) =====
+    // Necessário porque o template traz produtos exemplo (1-21). Se o usuário
+    // gerar com menos de 21 itens, os exemplos restantes ficam visíveis.
+    const ultimaLinhaProduto = linhaInicial + Math.max(quantidadeProdutos, linhasDisponíveis) - 1;
+    for (let r = linhaInicial; r <= ultimaLinhaProduto; r++) {
+      const row = worksheet.getRow(r);
+      for (let c = 1; c <= 5; c++) {
+        row.getCell(c).value = null;
+      }
+    }
 
     // ===== PREENCHER PRODUTOS =====
     items.forEach((item, index) => {
@@ -171,31 +182,28 @@ export class ExcelGeneratorPegLimpService {
       linha.getCell(4).value = item.unitPrice;                  // D - VALOR UNIT
       linha.getCell(5).value = totalProduto;                    // E - VALOR TOTAL
 
-      // Formatação numérica
       linha.getCell(2).numFmt = '0';
-      // Formato Accounting: cifrão à esquerda, número à direita
-      linha.getCell(4).numFmt = '_-"R$" * #,##0.00_-;-"R$" * #,##0.00_-;_-"R$" * "-"??_-;_-@_-';
-      linha.getCell(5).numFmt = '_-"R$" * #,##0.00_-;-"R$" * #,##0.00_-;_-"R$" * "-"??_-;_-@_-';
+      linha.getCell(4).numFmt = accountingFmt;
+      linha.getCell(5).numFmt = accountingFmt;
 
       linha.commit();
     });
 
-    // ===== TOTAIS (agora em linha dinâmica) =====
-    const novaLinhaSubTotal = linhaInicial + quantidadeProdutos;
+    // ===== TOTAIS =====
+    // Quando temos MENOS produtos que o template (M < 21), o SUB-TOTAL fica na
+    // linha 35 original (não sobe). Quando temos MAIS, sobe junto com o splice.
+    const novaLinhaSubTotal = linhaInicial + Math.max(quantidadeProdutos, linhasDisponíveis);
 
-    // SUB-TOTAL
     worksheet.getCell(`E${novaLinhaSubTotal}`).value = total;
-    worksheet.getCell(`E${novaLinhaSubTotal}`).numFmt = '_-"R$" * #,##0.00_-;-"R$" * #,##0.00_-;_-"R$" * "-"??_-;_-@_-';
+    worksheet.getCell(`E${novaLinhaSubTotal}`).numFmt = accountingFmt;
 
-    // DESCONTO (linha seguinte)
+    // DESCONTO e FRETE ficam vazios (mantém label e formatação do template)
     worksheet.getCell(`E${novaLinhaSubTotal + 1}`).value = null;
-
-    // FRETE (linha seguinte)
     worksheet.getCell(`E${novaLinhaSubTotal + 2}`).value = null;
 
-    // TOTAL (linha seguinte)
+    // TOTAL final
     worksheet.getCell(`E${novaLinhaSubTotal + 3}`).value = total;
-    worksheet.getCell(`E${novaLinhaSubTotal + 3}`).numFmt = '_-"R$" * #,##0.00_-;-"R$" * #,##0.00_-;_-"R$" * "-"??_-;_-@_-';
+    worksheet.getCell(`E${novaLinhaSubTotal + 3}`).numFmt = accountingFmt;
   }
 
   /**
