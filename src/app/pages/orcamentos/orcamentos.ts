@@ -23,6 +23,7 @@ import { ExcelComparativoService, type ComparativeQuote } from '../../services/e
 import { ExcelGeneratorFactory } from '../../services/excel-generator-factory';
 import { COMPANIES, type Company } from '../../data/empresas';
 import { mapProductName } from '../../config/product-mapping';
+import { roundMoney } from '../../utils/round-money';
 
 @Component({
   selector: 'app-root',
@@ -132,7 +133,8 @@ export class orcamentos {
   adjustedItems(items: QuoteItem[], percentage: number) {
     return items.map(item => ({
       ...item,
-      unitPrice: Number((item.unitPrice * (1 + percentage / 100)).toFixed(2))
+      // Aplica arredondamento de dezena de centavos após o ajuste percentual
+      unitPrice: roundMoney(item.unitPrice * (1 + percentage / 100))
     }));
   }
 
@@ -145,7 +147,9 @@ export class orcamentos {
       item.id === id
         ? {
             ...item,
-            [field]: this.isTextItemField(field) ? mappedValue : this.parsePositiveNumber(value)
+            [field]: this.isTextItemField(field)
+              ? mappedValue
+              : this.parseItemNumber(field, value)
           }
         : item
     );
@@ -234,7 +238,9 @@ export class orcamentos {
         item.id === id
           ? {
               ...item,
-              [field]: this.isTextItemField(field) ? mappedValue : this.parsePositiveNumber(value)
+              [field]: this.isTextItemField(field)
+                ? mappedValue
+                : this.parseItemNumber(field, value)
             }
           : item
       )
@@ -285,7 +291,8 @@ export class orcamentos {
       adjustment: nextAdjustment,
       items: this.editingQuote.items.map(item => ({
         ...item,
-        unitPrice: Number((item.unitPrice * adjustmentFactor).toFixed(2))
+        // Aplica arredondamento de dezena de centavos após o ajuste percentual
+        unitPrice: roundMoney(item.unitPrice * adjustmentFactor)
       }))
     };
   }
@@ -507,6 +514,19 @@ export class orcamentos {
 
   private isTextItemField(field: keyof QuoteItem) {
     return field === 'product' || field === 'unit' || field === 'code' || field === 'reference';
+  }
+
+  private isMoneyItemField(field: keyof QuoteItem) {
+    return field === 'unitPrice';
+  }
+
+  /**
+   * Parse de campo numérico do item. Para campos monetários (unitPrice),
+   * aplica arredondamento de dezena de centavos automaticamente.
+   */
+  private parseItemNumber(field: keyof QuoteItem, value: string) {
+    const parsed = this.parsePositiveNumber(value);
+    return this.isMoneyItemField(field) ? roundMoney(parsed) : parsed;
   }
 
   private parsePositiveNumber(value: string) {

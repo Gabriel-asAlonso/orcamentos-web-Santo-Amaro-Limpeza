@@ -3,6 +3,7 @@ import * as XLSX from 'xlsx';
 import { COMPANIES } from '../data/empresas';
 import { CustomerData, ExcelImportResult } from '../model/orcamento.model';
 import { mapProductName } from '../config/product-mapping';
+import { roundMoney } from '../utils/round-money';
 
 type SheetRow = Array<string | number>;
 
@@ -129,7 +130,9 @@ export class ExcelImporterService {
         const quantity = Math.round(this.parseNumber(row[quantidadeIndex]));
         const importedUnitPrice = valorIndex === -1 ? 0 : this.parseMoney(row[valorIndex]);
         const total = totalIndex === -1 ? 0 : this.parseMoney(row[totalIndex]);
-        const unitPrice = importedUnitPrice || (quantity > 0 && total > 0 ? total / quantity : 0);
+        const rawUnitPrice = importedUnitPrice || (quantity > 0 && total > 0 ? total / quantity : 0);
+        // Aplica arredondamento para dezena de centavos em todos os valores importados
+        const unitPrice = roundMoney(rawUnitPrice);
 
         return {
           id: Date.now() + index,
