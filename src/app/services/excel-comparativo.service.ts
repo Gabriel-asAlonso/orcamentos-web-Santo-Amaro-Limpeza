@@ -266,6 +266,7 @@ export class ExcelComparativoService {
       this.aplicarEstiloLinhaResumo(worksheet.getRow(rowIndex), layout.lastSupplierColumn);
     }
 
+    worksheet.getRow(layout.paymentRow).height = 26.25;
     worksheet.getRow(layout.deliveryRow).height = 60;
   }
 
@@ -512,7 +513,7 @@ export class ExcelComparativoService {
       paperSize: 9
     };
 
-    worksheet.getColumn(1).width = 9.69;
+    worksheet.getColumn(1).width = 13.69;
     worksheet.getColumn(2).width = 67.38;
     worksheet.getColumn(3).width = 14.75;
     worksheet.getColumn(5).width = 18;
