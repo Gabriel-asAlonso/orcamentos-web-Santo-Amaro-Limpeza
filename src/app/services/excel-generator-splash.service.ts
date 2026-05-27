@@ -55,9 +55,16 @@ export class ExcelGeneratorSplashService {
     dataCell.value = `${dia}/${mes}/${ano}`;
 
     // ===== DADOS DO CLIENTE =====
-    // Apenas sobrescreve se o customer tem valor real para o campo.
-    // Se o campo está vazio, mantém o conteúdo do template (que pode
-    // ter dados de exemplo ou ficar vazio se o template foi limpo).
+    // IMPORTANTE: o template traz dados de exemplo preenchidos (CONDOMINIO
+    // RESIDENCIAL PLANO & AMP RESERVA CASA VERDE, CNPJ45.081.794/0001-01,
+    // R MARAMBAIA, 397, 435 CEP 02513000). Limpar TODAS as células antes
+    // para não deixar dados do template "vazarem" quando algum campo do
+    // customer vier vazio/undefined.
+    const camposCliente = ['B9', 'B10', 'B11'];
+    camposCliente.forEach(ref => {
+      worksheet.getCell(ref).value = null;
+    });
+
     if (customer) {
       if (customer.client) {
         const b9 = worksheet.getCell('B9');
