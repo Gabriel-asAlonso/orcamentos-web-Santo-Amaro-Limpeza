@@ -124,7 +124,7 @@ export class ExcelGeneratorSantoAmaroService {
   }
 
   private fillProducts(worksheet: ExcelJS.Worksheet, items: QuoteItem[]) {
-    const accountingFmt = '_-"R$" * #,##0.00_-;-"R$" * #,##0.00_-;_-"R$" * "-"??_-;_-@_-';
+    const accountingFmt = '#,##0.00';
 
     // Cálculos de totais
     const total = items.reduce((sum, item) => {
