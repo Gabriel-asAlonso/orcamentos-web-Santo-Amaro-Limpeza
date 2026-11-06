@@ -3,7 +3,7 @@
     "id": "8740c0de-ab12-4d23-9fec-69cc231a8944",
     "name": "Administrador",
     "email": "admin@empresa.com",
-    "passwordHash": "$2b$10$5.ITh6n7ND0EdDxt.SbopeOYfjTMoLpQa79hh9P9O67eWyQHfRluW",
+    "passwordHash": "$2b$10$9Njv8aTs.NhSjG3abe3GYuES9QO1o3THg5tXjInTZpFMZLeZ06nNy",
     "active": true,
     "createdAt": "2026-05-05T01:34:50.519Z"
   },

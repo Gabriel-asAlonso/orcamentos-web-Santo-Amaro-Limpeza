@@ -47,6 +47,26 @@ O sistema agora suporta layouts personalizados de Excel para cada empresa, permi
      - Total geral: K (posição variável, acompanha a tabela)
      - Rodapé limpo após o total
 
+6. **ExcelGeneratorOmaService**
+   - Usado para: OMA (id: `oma`)
+   - Template: `assets/templates/cotacao-template-oma.xlsx`
+   - Layout: cotação individual OMA com um único bloco de fornecedor
+     - Identificação da cotação: G3:H3
+     - Dados do condomínio: C6, C7:F7, C8:F8 | CRM: H7
+     - Fornecedor da versão: G9:H11
+     - Itens: linhas 13-27, com expansão automática quando necessário
+     - Valor unitário em G e total em H; os blocos não utilizados ficam ocultos
+     - Total e condições comerciais acompanham a expansão da tabela
+     - Área de impressão limitada a A:H para não exibir seções vazias
+
+7. **ExcelComparativoService**
+   - Template: `assets/templates/planilha-comparativa.xlsx`
+   - Identifica cada fornecedor pelo nome da empresa, com fallback para `id` ou rótulo
+   - Exibe uma coluna de valor unitário por fornecedor
+   - Gera as colunas conforme a quantidade de orçamentos recebida
+   - Mantém até cinco fornecedores por aba impressa e cria abas de continuação para os demais, sem limitar a quantidade total
+   - Consolida todos os itens encontrados nos orçamentos, inclusive itens exclusivos de versões posteriores
+
 ## Como Adicionar um Novo Layout
 
 ### Passo 1: Criar o Template Excel
@@ -181,7 +201,7 @@ cell.numFmt = 'dd/mm/yyyy';
    ↓
 4. Factory identifica company.id
    ↓
-5. Retorna service apropriado (Splash ou padrão)
+5. Retorna o service apropriado para a empresa
    ↓
 6. Service carrega template
    ↓
@@ -211,6 +231,7 @@ cell.numFmt = 'dd/mm/yyyy';
 | Peg-Limp | `peg-limp` | ExcelGeneratorService (padrão) | `cotacao-template.xlsx` |
 | GrapaClean | `grapa-clean` | ExcelGeneratorService (padrão) | `cotacao-template.xlsx` |
 | Santa Limpeza | `Santa Limpeza` | ExcelGeneratorSantoAmaroService | `cotacao-template-santo-amaro.xlsx` |
+| OMA | `oma` | ExcelGeneratorOmaService | `cotacao-template-oma.xlsx` |
 
 ## Próximos Passos
 

@@ -91,5 +91,21 @@ export const COMPANIES: Company[] = [
     stateRegistration: '126.188.105.117',
     website: '',
     aliases: ['Sta Limpeza', 'Santo Amaro Limpeza', 'Santa Amaro']
+  },
+  {
+    id: 'oma',
+    name: 'OMA CONDOMÍNIO, LOCAÇÃO E VENDA',
+    address: '',
+    identity: 'Desde 1969',
+    taxId: '',
+    logoPath: '/logoOma.png',
+    contact: '',
+    phone: '',
+    email: '',
+    postalCode: '',
+    cnpj: '',
+    stateRegistration: '',
+    website: '',
+    aliases: ['OMA']
   }
 ];

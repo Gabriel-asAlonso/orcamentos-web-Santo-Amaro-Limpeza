@@ -55,10 +55,11 @@ type ComparativeLayout = {
 export class ExcelComparativoService {
   private readonly templatePath = 'assets/templates/planilha-comparativa.xlsx';
   private readonly firstProductRow = 6;
-  private readonly templateProductRows = 17;
-  private readonly templateTotalRow = 24;
+  private readonly templateProductRows = 22;
+  private readonly templateTotalRow = 29;
   private readonly firstSupplierColumn = 4;
-  private readonly templateSupplierColumns = 3;
+  private readonly templateSupplierColumns = 5;
+  private readonly suppliersPerPrintedPage = 5;
 
   async gerarPlanilhaComparativa(quotes: ComparativeQuote[]): Promise<void> {
     if (!quotes || quotes.length < 2) {
@@ -76,20 +77,7 @@ export class ExcelComparativoService {
 
     await workbook.xlsx.load(buffer);
 
-    const worksheet = workbook.worksheets[0];
-
-    if (!worksheet) {
-      throw new Error('A planilha modelo não possui nenhuma aba.');
-    }
-
-    const baseItems = quotes[0].items || [];
-    const layout = this.prepararLayout(worksheet, baseItems.length, quotes.length);
-
-    this.preencherCabecalho(worksheet, quotes);
-    this.preencherProdutos(worksheet, quotes, baseItems, layout);
-    this.preencherResumo(worksheet, quotes, layout);
-    this.ajustarBordasDoTemplate(worksheet, layout);
-    this.configurarImpressao(worksheet, layout.lastSupplierColumn);
+    this.populateWorkbook(workbook, quotes);
 
     const outputBuffer = await workbook.xlsx.writeBuffer();
 
@@ -101,11 +89,101 @@ export class ExcelComparativoService {
     );
   }
 
-  private prepararLayout(
-    worksheet: ExcelJS.Worksheet,
-    itemCount: number,
-    supplierCount: number
-  ): ComparativeLayout {
+  populateWorkbook(workbook: ExcelJS.Workbook, quotes: ComparativeQuote[]): ExcelJS.Workbook {
+    if (!quotes?.length) {
+      throw new Error('É necessário informar pelo menos um orçamento.');
+    }
+
+    const templateWorksheet = workbook.worksheets[0];
+
+    if (!templateWorksheet) {
+      throw new Error('A planilha modelo não possui nenhuma aba.');
+    }
+
+    const supplierGroups = this.chunkQuotes(quotes);
+    const worksheets = [templateWorksheet];
+
+    for (let index = 1; index < supplierGroups.length; index++) {
+      worksheets.push(this.cloneTemplateWorksheet(workbook, templateWorksheet, `Comparativo ${index + 1}`));
+    }
+
+    if (supplierGroups.length > 1) {
+      templateWorksheet.name = 'Comparativo 1';
+    }
+
+    const comparativeItems = this.collectComparativeItems(quotes);
+
+    supplierGroups.forEach((supplierQuotes, index) => {
+      const worksheet = worksheets[index];
+      const layout = this.prepararLayout(worksheet, comparativeItems.length, supplierQuotes.length);
+
+      this.preencherCabecalho(worksheet, supplierQuotes, quotes[0]);
+      this.preencherProdutos(worksheet, supplierQuotes, comparativeItems, layout);
+      this.preencherResumo(worksheet, supplierQuotes, layout);
+      this.ajustarBordasDoTemplate(worksheet, layout);
+      this.configurarImpressao(worksheet, layout.lastSupplierColumn, layout.dateRow + 1);
+    });
+
+    return workbook;
+  }
+
+  private chunkQuotes(quotes: ComparativeQuote[]): ComparativeQuote[][] {
+    const groups: ComparativeQuote[][] = [];
+
+    for (let index = 0; index < quotes.length; index += this.suppliersPerPrintedPage) {
+      groups.push(quotes.slice(index, index + this.suppliersPerPrintedPage));
+    }
+
+    return groups;
+  }
+
+  private collectComparativeItems(quotes: ComparativeQuote[]): ComparativeItem[] {
+    const items: ComparativeItem[] = [];
+    const knownItems = new Set<string>();
+
+    quotes.forEach(quote => {
+      (quote.items ?? []).forEach((item, itemIndex) => {
+        const key = this.getItemKey(item, itemIndex);
+
+        if (knownItems.has(key)) return;
+
+        knownItems.add(key);
+        items.push(item);
+      });
+    });
+
+    return items;
+  }
+
+  private cloneTemplateWorksheet(workbook: ExcelJS.Workbook, source: ExcelJS.Worksheet, name: string): ExcelJS.Worksheet {
+    const target = workbook.addWorksheet(name);
+    const targetId = target.id;
+    const model = this.deepClone(source.model);
+
+    model.id = targetId;
+    model.name = name;
+    target.model = model;
+
+    return target;
+  }
+
+  private deepClone<T>(value: T): T {
+    if (value instanceof Date) {
+      return new Date(value.getTime()) as T;
+    }
+
+    if (Array.isArray(value)) {
+      return value.map(entry => this.deepClone(entry)) as T;
+    }
+
+    if (value && typeof value === 'object') {
+      return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, this.deepClone(entry)])) as T;
+    }
+
+    return value;
+  }
+
+  private prepararLayout(worksheet: ExcelJS.Worksheet, itemCount: number, supplierCount: number): ComparativeLayout {
     const productRows = Math.max(itemCount, 1);
     const rowOffset = productRows - this.templateProductRows;
     const lastSupplierColumn = this.firstSupplierColumn + supplierCount - 1;
@@ -115,11 +193,7 @@ export class ExcelComparativoService {
     this.removerMesclagens(worksheet);
 
     if (rowOffset > 0) {
-      worksheet.spliceRows(
-        this.firstProductRow + this.templateProductRows,
-        0,
-        ...Array.from({ length: rowOffset }, () => [])
-      );
+      worksheet.spliceRows(this.firstProductRow + this.templateProductRows, 0, ...Array.from({ length: rowOffset }, () => []));
     }
 
     if (rowOffset < 0) {
@@ -154,10 +228,7 @@ export class ExcelComparativoService {
     return layout;
   }
 
-  private preencherCabecalho(
-    worksheet: ExcelJS.Worksheet,
-    quotes: ComparativeQuote[]
-  ): void {
+  private preencherCabecalho(worksheet: ExcelJS.Worksheet, quotes: ComparativeQuote[], customerQuote: ComparativeQuote): void {
     const titleCell = worksheet.getCell('A1');
     titleCell.value = 'Planilha - Mapa Comparativo';
     titleCell.alignment = {
@@ -172,7 +243,7 @@ export class ExcelComparativoService {
       right: { style: 'thin' }
     };
 
-    worksheet.getCell('B3').value = this.getCustomerName(quotes[0]) || 'Cliente';
+    worksheet.getCell('B3').value = this.getCustomerName(customerQuote) || 'Cliente';
     worksheet.getCell('D3').value = 'Produtos de Limpeza';
 
     quotes.forEach((quote, index) => {
@@ -180,7 +251,7 @@ export class ExcelComparativoService {
       const companyName = this.getCompanyName(quote);
 
       worksheet.getCell(4, columnIndex).value = companyName || quote.label || `Fornecedor ${index + 1}`;
-      worksheet.getCell(5, columnIndex).value = 'V. Total';
+      worksheet.getCell(5, columnIndex).value = 'V. Unitário';
 
       this.aplicarEstiloCabecalhoFornecedor(worksheet.getCell(4, columnIndex));
       this.aplicarEstiloCabecalhoFornecedor(worksheet.getCell(5, columnIndex));
@@ -189,12 +260,7 @@ export class ExcelComparativoService {
     this.limparColunasFornecedorNaoUsadas(worksheet, quotes.length, 4, 5);
   }
 
-  private preencherProdutos(
-    worksheet: ExcelJS.Worksheet,
-    quotes: ComparativeQuote[],
-    baseItems: ComparativeItem[],
-    layout: ComparativeLayout
-  ): void {
+  private preencherProdutos(worksheet: ExcelJS.Worksheet, quotes: ComparativeQuote[], baseItems: ComparativeItem[], layout: ComparativeLayout): void {
     const productRows = Math.max(baseItems.length, 1);
 
     for (let itemIndex = 0; itemIndex < productRows; itemIndex++) {
@@ -210,7 +276,7 @@ export class ExcelComparativoService {
         const columnIndex = this.firstSupplierColumn + quoteIndex;
         const quoteItem = item ? this.findQuoteItem(quote, item, itemIndex) : undefined;
 
-        row.getCell(columnIndex).value = quoteItem ? this.getItemTotal(quoteItem) : '';
+        row.getCell(columnIndex).value = quoteItem ? this.getUnitPrice(quoteItem) : '';
         row.getCell(columnIndex).numFmt = 'R$ #,##0.00';
       });
 
@@ -219,30 +285,17 @@ export class ExcelComparativoService {
     }
   }
 
-  private preencherResumo(
-    worksheet: ExcelJS.Worksheet,
-    quotes: ComparativeQuote[],
-    layout: ComparativeLayout
-  ): void {
+  private preencherResumo(worksheet: ExcelJS.Worksheet, quotes: ComparativeQuote[], layout: ComparativeLayout): void {
     worksheet.getCell(layout.totalRow, 1).value = 'TOTAL:';
     worksheet.getCell(layout.paymentRow, 1).value = 'FORMA DE PAGAMENTO:';
     worksheet.getCell(layout.deliveryRow, 1).value = 'PRAZO DE ENTREGA:';
     worksheet.getCell(layout.approvedRow, 1).value = 'EMPRESA APROVADA';
 
-    this.limparColunasFornecedorNaoUsadas(
-      worksheet,
-      quotes.length,
-      layout.totalRow,
-      layout.approvedRow
-    );
+    this.limparColunasFornecedorNaoUsadas(worksheet, quotes.length, layout.totalRow, layout.approvedRow);
 
     quotes.forEach((quote, index) => {
       const columnIndex = this.firstSupplierColumn + index;
-      const columnLetter = worksheet.getColumn(columnIndex).letter;
-
-      worksheet.getCell(layout.totalRow, columnIndex).value = {
-        formula: `SUM(${columnLetter}${this.firstProductRow}:${columnLetter}${layout.productEndRow})`
-      };
+      worksheet.getCell(layout.totalRow, columnIndex).value = quote.items.reduce((sum, item) => sum + this.getItemTotal(item), 0);
       worksheet.getCell(layout.totalRow, columnIndex).numFmt = 'R$ #,##0.00';
       worksheet.getCell(layout.paymentRow, columnIndex).value = quote.paymentTerm || '';
       worksheet.getCell(layout.deliveryRow, columnIndex).value = quote.deliveryTerm || '';
@@ -254,8 +307,7 @@ export class ExcelComparativoService {
       worksheet.getCell(layout.approvedRow, columnIndex).value = '(   )';
     });
 
-    worksheet.getCell(layout.infoRow, 1).value =
-      'Informações importantes sobre esta cotação a serem observadas:';
+    worksheet.getCell(layout.infoRow, 1).value = 'Informações importantes sobre esta cotação a serem observadas:';
 
     worksheet.getCell(layout.dateRow, 1).value =
       'Devolver ao Deptº de Compras                                                                             Elaborado em';
@@ -291,11 +343,7 @@ export class ExcelComparativoService {
     });
   }
 
-  private copiarEstiloLinhasProduto(
-    worksheet: ExcelJS.Worksheet,
-    productEndRow: number,
-    lastSupplierColumn: number
-  ): void {
+  private copiarEstiloLinhasProduto(worksheet: ExcelJS.Worksheet, productEndRow: number, lastSupplierColumn: number): void {
     const sourceRow = worksheet.getRow(this.firstProductRow);
 
     for (let rowNumber = this.firstProductRow; rowNumber <= productEndRow; rowNumber++) {
@@ -310,11 +358,7 @@ export class ExcelComparativoService {
     }
   }
 
-  private copiarEstiloColunasFornecedor(
-    worksheet: ExcelJS.Worksheet,
-    lastSupplierColumn: number,
-    lastRow: number
-  ): void {
+  private copiarEstiloColunasFornecedor(worksheet: ExcelJS.Worksheet, lastSupplierColumn: number, lastRow: number): void {
     for (let columnIndex = this.firstSupplierColumn; columnIndex <= lastSupplierColumn; columnIndex++) {
       worksheet.getColumn(columnIndex).width = 18;
       worksheet.getColumn(columnIndex).hidden = false;
@@ -324,10 +368,7 @@ export class ExcelComparativoService {
       }
 
       for (let rowNumber = 1; rowNumber <= lastRow; rowNumber++) {
-        this.copyCellStyle(
-          worksheet.getCell(rowNumber, this.firstSupplierColumn),
-          worksheet.getCell(rowNumber, columnIndex)
-        );
+        this.copyCellStyle(worksheet.getCell(rowNumber, this.firstSupplierColumn), worksheet.getCell(rowNumber, columnIndex));
       }
     }
   }
@@ -379,10 +420,7 @@ export class ExcelComparativoService {
     }
   }
 
-  private ajustarBordasDoTemplate(
-    worksheet: ExcelJS.Worksheet,
-    layout: ComparativeLayout
-  ): void {
+  private ajustarBordasDoTemplate(worksheet: ExcelJS.Worksheet, layout: ComparativeLayout): void {
     const lastRow = layout.dateRow + 1;
 
     this.padronizarBordasExistentes(worksheet, layout.lastSupplierColumn, lastRow);
@@ -394,11 +432,7 @@ export class ExcelComparativoService {
     this.normalizarEstiloCabecalho(worksheet, layout.lastSupplierColumn);
   }
 
-  private padronizarBordasExistentes(
-    worksheet: ExcelJS.Worksheet,
-    lastColumn: number,
-    lastRow: number
-  ): void {
+  private padronizarBordasExistentes(worksheet: ExcelJS.Worksheet, lastColumn: number, lastRow: number): void {
     for (let rowNumber = 1; rowNumber <= lastRow; rowNumber++) {
       const row = worksheet.getRow(rowNumber);
 
@@ -412,11 +446,7 @@ export class ExcelComparativoService {
     }
   }
 
-  private aplicarContornoExterno(
-    worksheet: ExcelJS.Worksheet,
-    lastColumn: number,
-    lastRow: number
-  ): void {
+  private aplicarContornoExterno(worksheet: ExcelJS.Worksheet, lastColumn: number, lastRow: number): void {
     for (let columnIndex = 1; columnIndex <= lastColumn; columnIndex++) {
       this.mergeBorder(worksheet.getCell(1, columnIndex), { top: { style: 'thin' } });
       this.mergeBorder(worksheet.getCell(lastRow, columnIndex), { bottom: { style: 'thin' } });
@@ -428,11 +458,7 @@ export class ExcelComparativoService {
     }
   }
 
-  private limparBordasAbaixoDoConteudo(
-    worksheet: ExcelJS.Worksheet,
-    lastColumn: number,
-    lastContentRow: number
-  ): void {
+  private limparBordasAbaixoDoConteudo(worksheet: ExcelJS.Worksheet, lastColumn: number, lastContentRow: number): void {
     for (let rowNumber = lastContentRow + 1; rowNumber <= worksheet.rowCount; rowNumber++) {
       for (let columnIndex = 1; columnIndex <= lastColumn; columnIndex++) {
         worksheet.getCell(rowNumber, columnIndex).border = undefined as any;
@@ -504,13 +530,14 @@ export class ExcelComparativoService {
     }
   }
 
-  private configurarImpressao(worksheet: ExcelJS.Worksheet, lastSupplierColumn: number): void {
+  private configurarImpressao(worksheet: ExcelJS.Worksheet, lastSupplierColumn: number, lastRow: number): void {
     worksheet.pageSetup = {
       orientation: 'landscape',
       fitToPage: true,
       fitToWidth: 1,
       fitToHeight: 0,
-      paperSize: 9
+      paperSize: 9,
+      printArea: `A1:${worksheet.getColumn(lastSupplierColumn).letter}${lastRow}`
     };
 
     worksheet.getColumn(1).width = 13.69;
@@ -528,12 +555,7 @@ export class ExcelComparativoService {
     }
   }
 
-  private limparColunasFornecedorNaoUsadas(
-    worksheet: ExcelJS.Worksheet,
-    supplierCount: number,
-    startRow: number,
-    endRow: number
-  ): void {
+  private limparColunasFornecedorNaoUsadas(worksheet: ExcelJS.Worksheet, supplierCount: number, startRow: number, endRow: number): void {
     const firstUnusedColumn = this.firstSupplierColumn + supplierCount;
     const lastColumnToClear = this.firstSupplierColumn + this.templateSupplierColumns - 1;
 
@@ -547,7 +569,7 @@ export class ExcelComparativoService {
   }
 
   private getCompanyName(quote: ComparativeQuote): string {
-    return quote.company?.id || quote.company?.name || quote.company?.nome || quote.label || '';
+    return quote.company?.name || quote.company?.nome || quote.company?.id || quote.label || '';
   }
 
   private getCustomerName(quote: ComparativeQuote): string {
@@ -576,16 +598,30 @@ export class ExcelComparativoService {
     return this.getQuantity(item) * this.getUnitPrice(item);
   }
 
-  private findQuoteItem(
-    quote: ComparativeQuote,
-    baseItem: ComparativeItem,
-    itemIndex: number
-  ): ComparativeItem | undefined {
+  private getItemKey(item: ComparativeItem, itemIndex: number): string {
+    if (item.id !== undefined && item.id !== null && item.id !== '') {
+      return `id:${String(item.id)}`;
+    }
+
+    const description = this.normalizeText(this.getItemDescription(item));
+
+    return description ? `description:${description}` : `position:${itemIndex}`;
+  }
+
+  private normalizeText(value: string): string {
+    return value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toLowerCase();
+  }
+
+  private findQuoteItem(quote: ComparativeQuote, baseItem: ComparativeItem, itemIndex: number): ComparativeItem | undefined {
     if (!quote.items?.length) {
       return undefined;
     }
 
-    if (baseItem.id) {
+    if (baseItem.id !== undefined && baseItem.id !== null && baseItem.id !== '') {
       const itemById = quote.items.find(item => item.id === baseItem.id);
 
       if (itemById) {
@@ -593,16 +629,20 @@ export class ExcelComparativoService {
       }
     }
 
+    const baseDescription = this.normalizeText(this.getItemDescription(baseItem));
+
+    if (baseDescription) {
+      const itemByDescription = quote.items.find(item => this.normalizeText(this.getItemDescription(item)) === baseDescription);
+
+      if (itemByDescription) {
+        return itemByDescription;
+      }
+    }
+
     return quote.items[itemIndex];
   }
 
-  private safeMergeCells(
-    worksheet: ExcelJS.Worksheet,
-    startRow: number,
-    startColumn: number,
-    endRow: number,
-    endColumn: number
-  ): void {
+  private safeMergeCells(worksheet: ExcelJS.Worksheet, startRow: number, startColumn: number, endRow: number, endColumn: number): void {
     try {
       worksheet.mergeCells(startRow, startColumn, endRow, endColumn);
     } catch {}

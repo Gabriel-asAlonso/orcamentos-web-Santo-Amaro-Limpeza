@@ -18,7 +18,7 @@ const USERS = [
     id: '8740c0de-ab12-4d23-9fec-69cc231a8944',
     name: 'Administrador',
     email: 'admin@empresa.com',
-    passwordHash: '$2b$10$5.ITh6n7ND0EdDxt.SbopeOYfjTMoLpQa79hh9P9O67eWyQHfRluW',
+    passwordHash: '$2b$10$9Njv8aTs.NhSjG3abe3GYuES9QO1o3THg5tXjInTZpFMZLeZ06nNy',
     active: true
   },
   {
@@ -45,7 +45,17 @@ const USERS = [
 ];
 
 app.use(cors({
-  origin: FRONTEND_URL,
+  origin: (origin, callback) => {
+    // Sem origin (ex.: curl/Postman) ou origem configurada: libera.
+    if (!origin || origin === FRONTEND_URL) {
+      return callback(null, true);
+    }
+    // Em desenvolvimento, aceita qualquer porta de localhost/127.0.0.1.
+    if (/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('Origem não permitida pelo CORS.'));
+  },
   credentials: true
 }));
 
