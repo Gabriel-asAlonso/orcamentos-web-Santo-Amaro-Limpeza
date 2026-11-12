@@ -18,7 +18,7 @@ const USERS = [
     id: '8740c0de-ab12-4d23-9fec-69cc231a8944',
     name: 'Administrador',
     email: 'admin@empresa.com',
-    passwordHash: '$2b$10$9Njv8aTs.NhSjG3abe3GYuES9QO1o3THg5tXjInTZpFMZLeZ06nNy',
+    passwordHash: '$2b$10$S.nv.7/nFgg1p6Ww3iBwBuNDA2ef4V07bEqG3hfEilAhs9/YOyNna',
     active: true
   },
   {

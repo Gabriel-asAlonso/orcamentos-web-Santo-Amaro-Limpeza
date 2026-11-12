@@ -60,10 +60,11 @@ export class ExcelGeneratorSantoAmaroService {
     dataCell.numFmt = '@';
     dataCell.value = `${dia}/${mes}/${ano}`;
 
-    // ===== NÚMERO DO ORÇAMENTO (Aleatório 2000-3000) =====
-    // J4 = número do orçamento (era K4 no template antigo)
-    const numeroOrcamento = Math.floor(Math.random() * 1001) + 2000;
-    worksheet.getCell('J4').value = numeroOrcamento;
+    // ===== TELEFONE DA EMPRESA =====
+    // J4 = telefone da empresa (antes era o número do orçamento aleatório)
+    const telefoneCell = worksheet.getCell('J4');
+    telefoneCell.numFmt = '@';
+    telefoneCell.value = quote.company?.phone ?? '';
 
     console.log('[Santo Amaro] Customer recebido:', customer);
     console.log('[Santo Amaro] Quote info:', {

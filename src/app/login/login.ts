@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectorRef, Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
@@ -47,7 +47,8 @@ export class Login {
 
   constructor(
     private router: Router,
-    private http: HttpClient
+    private http: HttpClient,
+    private cdr: ChangeDetectorRef
   ) {}
 
   handleSubmit(): void {
@@ -84,6 +85,7 @@ export class Login {
       error: (error: HttpErrorResponse) => {
         this.loading = false;
         this.errorMessage = error.error?.message ?? 'Não foi possível entrar. Tente novamente.';
+        this.cdr.markForCheck();
       }
     });
   }
